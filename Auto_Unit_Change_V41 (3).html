@@ -1,0 +1,2528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Auto-Unit-Change</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ---- design system tokens ---- */
+  --indigo-50:#eef3fb; --indigo-100:#d5e1f6; --indigo-500:#407add; --indigo-600:#1d4fa4; --indigo-700:#153874;
+  --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+  --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155; --slate-900:#0f172a;
+  --emerald-50:#ecfdf5; --emerald-500:#10b981; --emerald-600:#059669; --emerald-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-600:#dc2626;
+  --amber-500:#f59e0b;
+
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+
+  --shadow-btn:0 1px 2px rgba(0,0,0,.03);
+  --shadow-primary:0 4px 14px rgba(29,79,164,.28);
+  --shadow-card:0 1px 3px rgba(15,23,42,.04);
+  --shadow-float:0 10px 30px rgba(15,23,42,.12);
+  --shadow-modal:0 20px 60px rgba(0,0,0,.5);
+  --overlay-backdrop:rgba(15,23,42,.78);
+
+  /* ---- legacy aliases: every existing rule below keeps its original variable
+     name so no selector/structure needed to change, only what each token
+     resolves to ---- */
+  --graphite-950:var(--slate-50);
+  --graphite-900:#ffffff;
+  --graphite-800:var(--slate-50);
+  --graphite-700:var(--slate-200);
+  --graphite-600:var(--slate-200);
+  --graphite-500:var(--slate-400);
+  --paper:#ffffff;
+  --paper-line:var(--slate-200);
+  --ink:var(--slate-900);
+  --off:var(--slate-500);
+  --pencil:var(--indigo-600);
+  --pencil-dim:var(--indigo-700);
+  --pencil-grad:var(--indigo-600);
+  --amber:var(--amber-500);
+  --redline:var(--red-500);
+  --green:var(--emerald-600);
+  --white:var(--slate-900);
+  --mono:var(--font);
+  --sans:var(--font);
+  --r-sm:10px;
+  --r-md:14px;
+  --r-lg:16px;
+  --shadow-sm:var(--shadow-card);
+  --shadow-md:var(--shadow-float);
+  --shadow-lg:0 14px 40px rgba(15,23,42,.16);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;background:var(--slate-50);color:var(--slate-900);font-family:var(--font);}
+body{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* ---------- Top bar ---------- */
+#topbar{
+  height:52px;flex:0 0 auto;display:flex;align-items:center;gap:14px;
+  padding:0 16px;background:#ffffff;border-bottom:1px solid var(--slate-200);
+  z-index:20;
+}
+#topbar .brand{display:flex;align-items:center;gap:10px;margin-right:6px;}
+#topbar .brand .mark{
+  width:26px;height:26px;border:1.5px solid var(--indigo-600);border-radius:6px;position:relative;flex:0 0 auto;
+  background:linear-gradient(#ffffff,#ffffff) padding-box;
+}
+#topbar .brand .mark::before,#topbar .brand .mark::after{
+  content:'';position:absolute;background:var(--indigo-600);
+}
+#topbar .brand .mark::before{left:5px;right:5px;top:12px;height:1.5px;}
+#topbar .brand .mark::after{top:5px;bottom:5px;left:12px;width:1.5px;}
+#topbar .brand b{font-family:var(--font);font-size:14px;letter-spacing:.02em;color:var(--slate-900);}
+#topbar .brand span{font-family:var(--font);font-size:10px;color:var(--slate-400);letter-spacing:.08em;text-transform:uppercase;}
+
+.btn{
+  font-family:var(--font);font-size:12px;font-weight:600;color:var(--slate-700);
+  background:#ffffff;border:1px solid var(--slate-200);border-radius:10px;
+  padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+  box-shadow:var(--shadow-btn);
+  transition:border-color .15s,background .15s,color .15s,transform .1s,box-shadow .15s;
+}
+.btn:hover{border-color:var(--indigo-700);color:var(--indigo-700);background:rgba(238,243,251,.4);}
+.btn:active{transform:translateY(1px);}
+.btn.primary{background:var(--indigo-600);border-color:var(--indigo-600);color:#ffffff;font-weight:700;box-shadow:var(--shadow-primary);}
+.btn.primary:hover{background:var(--indigo-700);border-color:var(--indigo-700);color:#ffffff;box-shadow:0 6px 18px rgba(21,56,116,.32);}
+.btn.danger{border-color:var(--red-500);color:var(--red-600);}
+.btn.danger:hover{background:var(--red-50);border-color:var(--red-600);color:var(--red-600);}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+.btn:disabled:hover{border-color:var(--slate-200);background:#ffffff;color:var(--slate-700);}
+.btn.undo-ready{border-color:var(--amber-500);color:var(--amber-500);}
+.btn.undo-ready:hover{background:rgba(245,158,11,.08);}
+.btn svg{width:14px;height:14px;flex:0 0 auto;}
+
+#topbar .spacer{flex:1;}
+#filename{font-family:var(--font);font-size:12px;color:var(--slate-400);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ---------- Body layout ---------- */
+#body{flex:1;display:flex;min-height:0;}
+
+/* Sidebar */
+#sidebar{width:340px;flex:0 0 auto;background:#ffffff;border-right:1px solid var(--slate-200);
+  display:flex;flex-direction:column;min-height:0;}
+#tabs{display:flex;gap:1px;background:var(--slate-100);border-radius:10px;margin:10px;flex:0 0 auto;padding:3px;overflow-x:auto;}
+.tab{flex:0 0 auto;text-align:center;padding:7px 7px;font-size:9.5px;font-weight:600;letter-spacing:.01em;
+  color:var(--slate-500);cursor:pointer;border-radius:8px;text-transform:uppercase;font-family:var(--font);
+  white-space:nowrap;border:1px solid transparent;transition:color .15s,background .15s,box-shadow .15s;}
+.tab.active{color:#ffffff;background:var(--indigo-600);box-shadow:var(--shadow-card);}
+.tab:hover{color:var(--slate-900);}
+.tab.active:hover{color:#ffffff;}
+#panels{flex:1;overflow-y:auto;min-height:0;}
+.panel{display:none;padding:18px;}
+.panel.active{display:block;}
+
+.hint{font-size:12px;color:var(--slate-500);line-height:1.55;margin:0 0 14px;}
+.section-label{font-family:var(--font);font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:.08em;color:var(--slate-400);
+  margin:20px 0 9px;display:flex;align-items:center;gap:7px;}
+.section-label::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--indigo-600);flex:0 0 auto;}
+.section-label:first-child{margin-top:0;}
+
+.dropzone{
+  border:1.5px dashed var(--slate-300);border-radius:14px;padding:26px 14px;text-align:center;
+  cursor:pointer;color:var(--slate-500);font-size:12.5px;transition:border-color .15s,background .15s;background:#ffffff;
+}
+.dropzone:hover, .dropzone.drag{border-color:var(--indigo-500);background:var(--indigo-50);color:var(--slate-900);}
+.dropzone b{color:var(--slate-900);}
+
+.layer-row{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid transparent;font-size:12.5px;transition:background .12s,border-color .12s;
+}
+.layer-row:hover{background:var(--slate-50);}
+.layer-row.selected{background:var(--indigo-50);border-color:var(--indigo-600);}
+.layer-row .swatch{width:8px;height:8px;border-radius:2px;flex:0 0 auto;background:var(--slate-300);}
+.layer-row.tagged .swatch{background:var(--indigo-600);}
+.layer-row .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font);font-size:11.5px;color:var(--slate-700);}
+.layer-row .tag{font-family:var(--font);font-size:10px;color:var(--slate-400);}
+.layer-row.tagged .tag{color:var(--indigo-600);}
+
+.tag-editor,.card{background:#ffffff;border:1px solid var(--slate-200);border-radius:14px;
+  padding:12px;margin-top:8px;box-shadow:var(--shadow-card);overflow:hidden;}
+.tag-editor .row,.card .row{display:flex;gap:8px;margin-bottom:8px;}
+.tag-editor label,.card label{display:block;font-size:10px;color:var(--slate-400);margin-bottom:4px;font-family:var(--font);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+
+input[type=text],input[type=number]{
+  width:100%;background:#ffffff;border:1px solid var(--slate-200);border-radius:8px;
+  color:var(--slate-900);padding:8px 10px;font-size:12.5px;font-family:var(--font);transition:border-color .15s,box-shadow .15s;
+}
+input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--indigo-500);box-shadow:0 0 0 3px rgba(64,122,221,.15);}
+
+table.grid{width:100%;border-collapse:collapse;font-size:11.5px;}
+table.grid th{
+  text-align:left;font-family:var(--font);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--slate-400);padding:5px 6px;border-bottom:1px solid var(--slate-200);font-weight:700;
+}
+table.grid td{padding:4px 6px;border-bottom:1px solid var(--slate-100);color:var(--slate-700);}
+table.grid input{padding:5px 7px;font-size:11.5px;}
+table.grid tr:hover td{background:var(--slate-50);}
+.grid-wrap{overflow-x:auto;border:1px solid var(--slate-200);border-radius:14px;margin-bottom:10px;}
+
+.rowbtn{background:none;border:none;color:var(--slate-400);cursor:pointer;padding:2px 4px;font-size:13px;}
+.rowbtn:hover{color:var(--red-600);}
+
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px;}
+
+.pill{display:inline-flex;align-items:center;gap:5px;background:#ffffff;border:1px solid var(--slate-200);
+  border-radius:20px;padding:4px 11px 4px 9px;font-size:11px;font-family:var(--font);font-weight:600;color:var(--slate-700);box-shadow:var(--shadow-card);}
+.pill .dot{width:6px;height:6px;border-radius:50%;background:var(--indigo-600);}
+
+.radio-card{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--slate-200);
+  border-radius:10px;margin-bottom:9px;cursor:pointer;font-size:12px;background:#ffffff;transition:border-color .15s,background .15s,box-shadow .15s;}
+.radio-card:hover{border-color:var(--indigo-500);}
+.radio-card.active{border-color:var(--indigo-600);background:var(--indigo-50);box-shadow:0 0 0 3px rgba(29,79,164,.1);}
+.radio-card input{margin-top:2px;accent-color:var(--indigo-600);}
+.radio-card .t{font-weight:600;margin-bottom:2px;color:var(--slate-900);}
+.radio-card .d{color:var(--slate-500);font-size:11px;line-height:1.45;}
+
+/* Main canvas */
+#main{flex:1;position:relative;min-width:0;display:flex;flex-direction:column;}
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:
+    linear-gradient(#ffffff,#ffffff) ,
+    repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(15,23,42,.035) 23px, rgba(15,23,42,.035) 24px),
+    repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(15,23,42,.035) 23px, rgba(15,23,42,.035) 24px);
+  cursor:grab;
+}
+#canvas-wrap.panning{cursor:grabbing;}
+#canvas-wrap.selecting{cursor:crosshair;}
+#stage{position:absolute;top:0;left:0;transform-origin:0 0;}
+#stage svg{display:block;}
+
+.empty-state{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--slate-400);
+}
+.empty-state .icon{width:56px;height:56px;opacity:.5;}
+.empty-state b{color:var(--slate-500);font-family:var(--font);font-size:13px;text-transform:uppercase;letter-spacing:.06em;}
+.empty-state span{font-size:12px;max-width:280px;text-align:center;line-height:1.5;color:var(--slate-500);}
+
+/* Title block (signature element) */
+#titleblock{
+  position:absolute;left:16px;bottom:16px;background:rgba(255,255,255,.94);border:1px solid var(--slate-200);
+  border-radius:14px;padding:11px 16px;font-family:var(--font);font-size:11px;color:var(--slate-500);
+  display:grid;grid-template-columns:auto auto;gap:2px 18px;backdrop-filter:blur(4px);z-index:5;pointer-events:none;
+  box-shadow:var(--shadow-float);
+}
+#titleblock .k{text-transform:uppercase;letter-spacing:.06em;font-size:9px;color:var(--slate-400);}
+#titleblock .v{color:var(--slate-900);font-weight:600;}
+#titleblock hr{grid-column:1/3;border:none;border-top:1px solid var(--slate-200);margin:4px 0;width:100%;}
+
+/* Zoom controls */
+#zoomctl{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;background:#ffffff;
+  border:1px solid var(--slate-200);border-radius:14px;overflow:hidden;z-index:5;box-shadow:var(--shadow-float);}
+#zoomctl button{width:34px;height:32px;background:none;border:none;color:var(--slate-700);cursor:pointer;font-size:16px;font-family:var(--font);transition:background .12s;}
+#zoomctl button:hover{background:var(--slate-50);}
+#zoomctl .zlabel{font-size:9px;text-align:center;padding:4px 0;color:var(--slate-400);font-family:var(--font);border-top:1px solid var(--slate-200);}
+
+/* mode banner */
+#modebar{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:var(--amber-500);color:#241a05;
+  font-family:var(--font);font-size:11.5px;font-weight:700;padding:8px 18px;border-radius:24px;display:none;
+  align-items:center;gap:10px;z-index:6;box-shadow:var(--shadow-float);}
+#modebar button{background:rgba(0,0,0,.15);border:none;border-radius:20px;color:inherit;font-family:inherit;font-weight:700;
+  font-size:10.5px;padding:4px 10px;cursor:pointer;transition:background .12s;}
+#modebar button:hover{background:rgba(0,0,0,.25);}
+
+/* Illustrator snapshot warning banner */
+#pgfBanner{
+  display:none; align-items:center; gap:10px; width:100%; flex:0 0 auto;
+  background:var(--amber-500); color:#241a05;
+  padding:9px 18px; font-size:12.5px; font-weight:600; z-index:15;
+  border-bottom:1px solid rgba(0,0,0,.1);
+}
+#pgfBanner svg{width:18px;height:18px;flex:0 0 auto;}
+#pgfBannerText{flex:1;}
+#pgfBanner button{
+  background:rgba(0,0,0,.12); border:none; border-radius:8px; color:inherit; font-family:var(--font);
+  font-weight:700; font-size:11.5px; padding:6px 12px; cursor:pointer; white-space:nowrap; transition:background .12s;
+}
+#pgfBanner button:hover{background:rgba(0,0,0,.2);}
+#pgfBannerDismiss{background:transparent;}
+
+/* selection styling injected into svg elements via class */
+.uf-selected{outline:2px solid var(--indigo-600) !important; outline-offset:1px;}
+.uf-hover{outline:1.5px dashed var(--amber-500) !important;}
+.uf-perf-hidden{display:none !important;}
+.uf-not-focused{display:none !important;}
+
+/* Log drawer */
+#logdrawer{
+  flex:0 0 auto;height:150px;background:#ffffff;border-top:1px solid var(--slate-200);
+  display:flex;flex-direction:column;transition:height .15s;
+}
+#logdrawer.collapsed{height:32px;}
+#loghead{height:32px;flex:0 0 auto;display:flex;align-items:center;padding:0 14px;gap:8px;cursor:pointer;
+  font-family:var(--font);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);}
+#loghead b{color:var(--slate-900);}
+#logbody{flex:1;overflow-y:auto;padding:6px 14px 12px;font-family:var(--font);font-size:11.5px;}
+.logline{padding:3px 0;border-bottom:1px solid var(--slate-100);display:flex;gap:8px;}
+.logline .icn{flex:0 0 auto;width:14px;text-align:center;}
+.logline.ok .icn{color:var(--emerald-600);}
+.logline.err .icn{color:var(--red-600);}
+.logline.info .icn{color:var(--indigo-600);}
+.logline .txt{color:var(--slate-500);}
+.logline.ok .txt b, .logline.err .txt b{color:var(--slate-900);}
+
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:var(--slate-300);border-radius:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#111827;
+  border:1px solid #111827;color:#ffffff;padding:10px 18px;border-radius:14px;font-size:12.5px;
+  z-index:100;box-shadow:var(--shadow-modal);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(4px);}
+
+.checkbox-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--slate-500);margin-bottom:10px;cursor:pointer;}
+.checkbox-row input{width:auto;accent-color:var(--indigo-600);}
+
+.small-note{font-size:11px;color:var(--slate-400);line-height:1.5;margin-top:10px;padding-top:10px;border-top:1px dashed var(--slate-200);}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.js"></script>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="brand">
+    <div class="mark"></div>
+    <div><b>AUTO-UNIT-CHANGE</b></div>
+  </div>
+  <button class="btn" id="btnOpenSvg">Open SVG</button>
+  <input type="file" id="fileSvg" accept=".svg" style="display:none">
+  <span id="filename">No file loaded</span>
+  <div class="spacer"></div>
+  <button class="btn" id="btnUndo" disabled title="Undo last action (Ctrl/Cmd+Z)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    <span id="undoLabel">Undo</span>
+  </button>
+  <div id="keepIllustratorLayersWrap" style="display:none;align-items:center;gap:6px;margin-right:4px;" title="Original file included Illustrator's own round-trip data. Checked (default): Illustrator's Layers panel keeps your original structure, but Illustrator will show the pre-edit artwork instead of your changes if reopened there. Unchecked: edits are guaranteed visible in Illustrator, but its Layers panel will show one flat layer.">
+    <input type="checkbox" id="chkKeepIllustratorLayers" checked style="width:auto;">
+    <label for="chkKeepIllustratorLayers" style="font-size:11px;color:var(--off);white-space:nowrap;cursor:pointer;">Keep Illustrator layers (uncheck to guarantee edits show in AI)</label>
+  </div>
+  <button class="btn primary" id="btnExport" disabled>Export SVG</button>
+</div>
+
+<div id="pgfBanner" style="display:none;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+  <span id="pgfBannerText">This file has an embedded Illustrator snapshot.</span>
+  <button id="pgfBannerDetails">What does this mean?</button>
+  <button id="pgfBannerDismiss">Dismiss</button>
+</div>
+
+<div id="body">
+  <div id="sidebar">
+    <div id="tabs">
+      <div class="tab active" data-panel="layers">Layers</div>
+      <div class="tab" data-panel="rename">Rename</div>
+      <div class="tab" data-panel="bulk">CSV Bulk</div>
+      <div class="tab" data-panel="flip">Flip</div>
+      <div class="tab" data-panel="combine">Combine/Split</div>
+    </div>
+    <div id="panels">
+
+      <!-- LAYERS PANEL -->
+      <div class="panel active" id="panel-layers">
+        <p class="hint">Layers are the top-level groups in your SVG — usually one per building floor. Tag each with a Building / Floor ID so unit tasks can target the right plan.</p>
+        <label class="checkbox-row"><input type="checkbox" id="chkShowRef"> Show reference/background layers</label>
+        <label class="checkbox-row"><input type="checkbox" id="chkFocusLayer" checked> Show only the selected floor</label>
+        <div id="largeImageToggleWrap" style="display:none">
+          <label class="checkbox-row"><input type="checkbox" id="chkShowLargeImages"> Show <span id="largeImageCount">0</span> large embedded image(s) (may be slow)</label>
+        </div>
+
+        <div class="section-label">Reference CSV (Building/Floor Numbers)</div>
+        <p class="hint" style="margin-bottom:8px;">Upload your unit list CSV (Unit ID, Unit Number, Building, Floor) to show real Building/Floor numbers everywhere instead of internal IDs — and to let Manual/CSV tasks use those numbers directly.</p>
+        <div class="dropzone" id="refCsvDrop"><b>Click to choose a CSV</b><br>or drag one here</div>
+        <input type="file" id="fileRefCsv" accept=".csv" style="display:none">
+        <div id="refCsvStatus" style="display:none;margin-top:8px;font-size:12px;color:var(--off);"></div>
+
+        <div class="section-label">Detected Layers</div>
+        <div id="layerList"></div>
+        <div id="layerTagEditor" style="display:none" class="tag-editor">
+          <div class="row">
+            <div style="flex:1"><label>Building ID</label><input type="text" id="tagBuilding" placeholder="e.g. 1"></div>
+            <div style="flex:1"><label>Floor ID</label><input type="text" id="tagFloor" placeholder="e.g. 2"></div>
+          </div>
+          <div class="btnrow">
+            <button class="btn primary" id="btnSaveTag">Save Tag</button>
+            <button class="btn" id="btnCancelTag">Cancel</button>
+          </div>
+        </div>
+        <div class="section-label">Units in Selected Layer</div>
+        <div id="unitTableWrap" class="grid-wrap"><table class="grid"><thead><tr><th>Unit</th><th>Outline</th><th>Shape</th><th>Hit</th></tr></thead><tbody id="unitTableBody"></tbody></table></div>
+      </div>
+
+      <!-- RENAME PANEL -->
+      <div class="panel" id="panel-rename">
+        <p class="hint">Rename a single unit. Select the floor it's on in the Layers tab first, then enter its current number and the new one.</p>
+
+        <div class="section-label">Rename Unit</div>
+        <div class="card">
+          <input type="text" id="renameOldUnit" placeholder="Current unit number (e.g. 6049)" style="margin-bottom:10px;">
+          <input type="text" id="renameNewUnit" placeholder="New unit number (e.g. 6049A)" style="margin-bottom:0;">
+        </div>
+        <div class="btnrow">
+          <button class="btn primary" id="btnRunRename" style="width:100%;justify-content:center;">Rename Unit</button>
+        </div>
+        <div class="small-note">Looks for the current number only within the floor selected in the Layers tab. If a reference CSV is loaded, the underlying database ID updates too — without one, the visible label changes but the internal ID stays whatever it already was.</div>
+      </div>
+
+      <!-- BULK PANEL -->
+      <div class="panel" id="panel-bulk">
+        <p class="hint">Upload a mapping CSV with columns for Old Unit, New Unit, Building ID/Name, Floor ID/Name, and (optionally) Unit ID. Headers are matched flexibly. Building/Floor can be internal IDs or the numbers from your reference CSV.</p>
+        <div class="dropzone" id="csvDrop">
+          <b>Click to choose a CSV</b><br>or drag one here
+        </div>
+        <input type="file" id="fileCsv" accept=".csv" style="display:none">
+        <div id="csvSummary" style="display:none">
+          <div class="section-label">Preview</div>
+          <div class="grid-wrap" style="max-height:260px;overflow-y:auto;"><table class="grid" id="csvPreviewTable">
+            <thead><tr><th>Old</th><th>New</th><th>Bldg</th><th>Floor</th><th>Unit ID</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+          <div class="btnrow">
+            <button class="btn primary" id="btnApplyCsv">Apply All Rows</button>
+            <button class="btn" id="btnClearCsv">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FLIP PANEL -->
+      <div class="panel" id="panel-flip">
+        <p class="hint">Select two or more unit labels directly on the canvas, then choose how to flip them.</p>
+        <button class="btn primary" id="btnSelectMode" style="width:100%;justify-content:center;margin-bottom:10px;">Start Selecting Units</button>
+        <button class="btn" id="btnSelectAllFloor" style="width:100%;justify-content:center;margin-bottom:14px;">Select All Units on Current Floor</button>
+        <div class="pill" id="selCountPill" style="margin-bottom:14px;"><span class="dot"></span><span id="selCountText">0 selected</span></div>
+
+        <div class="section-label">Flip Pattern</div>
+        <label class="radio-card active" data-mode="HORZ">
+          <input type="radio" name="flipmode" value="HORZ" checked>
+          <div><div class="t">Horizontal Flip</div><div class="d">Keeps row grouping, swaps left‑to‑right within each row.</div></div>
+        </label>
+        <label class="radio-card" data-mode="VERT">
+          <input type="radio" name="flipmode" value="VERT">
+          <div><div class="t">Vertical Flip</div><div class="d">Keeps column grouping, swaps top‑to‑bottom within each column.</div></div>
+        </label>
+        <label class="radio-card" data-mode="GLOBAL">
+          <input type="radio" name="flipmode" value="GLOBAL">
+          <div><div class="t">Diagonal Flip (X pattern)</div><div class="d">Mirrors each unit through the center — pairs opposite corners, like a 180° rotation.</div></div>
+        </label>
+        <div class="btnrow">
+          <button class="btn primary" id="btnRunFlip" style="width:100%;justify-content:center;">Execute Flip</button>
+        </div>
+        <div class="small-note">Flip mirrors whatever you've selected as one group — select across multiple buildings on the same floor if you want, and they'll flip together. Selecting just 2 units and running any pattern is a plain swap.</div>
+      </div>
+
+      <!-- COMBINE/SPLIT PANEL -->
+      <div class="panel" id="panel-combine">
+        <p class="hint">Select unit labels directly on the canvas, then combine 2–3 of them into one, or split 1 into several.</p>
+        <button class="btn primary" id="btnSelectModeCombine" style="width:100%;justify-content:center;margin-bottom:10px;">Start Selecting Units</button>
+        <div class="pill" id="selCountPillCombine" style="margin-bottom:14px;"><span class="dot"></span><span id="selCountTextCombine">0 selected</span></div>
+
+        <div class="section-label">Combine (select 2–3 units)</div>
+        <p class="hint">The result keeps the first-selected unit's label position; the others are removed. Every existing hit area, unit shape, and outline for the selected units merges into one.</p>
+        <input type="text" id="combineNewUnit" placeholder="New unit number (e.g. 1109-10)" style="margin-bottom:10px;">
+        <div class="btnrow">
+          <button class="btn primary" id="btnRunCombine" style="width:100%;justify-content:center;">Combine Selected Units</button>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">Split (select exactly 1 unit)</div>
+        <label class="radio-card active" data-mode="vertical">
+          <input type="radio" name="splitdir" value="vertical" checked>
+          <div><div class="t">Vertical Split</div><div class="d">Divides left‑to‑right into equal columns.</div></div>
+        </label>
+        <label class="radio-card" data-mode="horizontal">
+          <input type="radio" name="splitdir" value="horizontal">
+          <div><div class="t">Horizontal Split</div><div class="d">Divides top‑to‑bottom into equal rows.</div></div>
+        </label>
+        <div class="section-label">New unit number for each piece</div>
+        <div id="splitUnitInputs">
+          <input type="text" class="splitNewUnit" placeholder="Piece 1 (e.g. 1201A)" style="margin-bottom:8px;">
+          <input type="text" class="splitNewUnit" placeholder="Piece 2 (e.g. 1201B)" style="margin-bottom:8px;">
+        </div>
+        <button class="btn" id="btnAddSplitPiece" style="width:100%;justify-content:center;margin-top:6px;">+ Add a 3rd piece</button>
+        <div class="btnrow" style="margin-top:12px;">
+          <button class="btn primary" id="btnRunSplit" style="width:100%;justify-content:center;">Split Selected Unit</button>
+        </div>
+        <div class="small-note">Split always divides into equal-sized rectangular sections along the chosen direction — not a freeform cut line, matching how the original Illustrator tool worked.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="modebar"><span id="modebarText">Selecting units — click labels on the canvas</span><button id="btnStopSelect">Done</button></div>
+    <div id="canvas-wrap">
+      <div class="empty-state" id="emptyState">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/></svg>
+        <b>No plan loaded</b>
+        <span>Open an SVG floor plan exported from Illustrator to begin tagging layers and editing unit labels.</span>
+      </div>
+      <div id="stage"></div>
+      <div id="titleblock" style="display:none">
+        <span class="k">File</span><span class="v" id="tbFile">—</span>
+        <span class="k">Layers</span><span class="v" id="tbLayers">0</span>
+        <span class="k">Tagged</span><span class="v" id="tbTagged">0</span>
+        <hr>
+        <span class="k">Selection</span><span class="v" id="tbSelection">Layer —</span>
+        <span class="k">Units</span><span class="v" id="tbUnits">0</span>
+      </div>
+      <div id="zoomctl">
+        <button id="zoomIn">+</button>
+        <div class="zlabel" id="zoomLabel">100%</div>
+        <button id="zoomOut">–</button>
+        <button id="zoomFit" style="font-size:11px;">Fit</button>
+      </div>
+    </div>
+    <div id="logdrawer">
+      <div id="loghead"><b>Activity Log</b><span id="logcount">— 0 entries</span></div>
+      <div id="logbody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   AUTO-UNIT-CHANGE
+   ========================================================= */
+
+const state = {
+  svgEl: null,
+  fileName: null,
+  layers: [],          // {el, idx, building, floor, tagged, guessedName, skipRender}
+  selectedLayerIdx: null,
+  csvRows: [],
+  selection: new Set(), // text elements selected for Flip
+  selectMode: false,
+  view: { scale: 1, x: 0, y: 0 },
+  panning: false,
+  panStart: null,
+  dragDistance: 0,
+  history: [],          // innerHTML snapshots for undo
+  renameRows: [],
+  moveRows: [],
+  showRefLayers: false,
+  showLargeImages: false,
+  focusSelectedLayer: true,
+  largeImageData: [],  // [{refId, mime, b64}] — original bytes of images set aside pre-parse
+  unitRefRows: [],      // [{unitId, unitNumber, building, floor}] from the uploaded reference CSV
+  fileSizeBytes: 0,
+  strippedPgfBlock: null,      // the removed Illustrator round-trip snapshot, kept in memory in case the user opts back in
+  strippedPgfForeignObject: null,
+  pgfRestoreMode: null,        // 'beforeSvgClose' or 'afterSwitchClose' — where to re-insert the PGF block if the user opts back in
+  originalDoctype: null,       // captured DOCTYPE (with any custom entity definitions) — always re-emitted on export
+  keepIllustratorLayers: false // export-time choice: preserve Illustrator's Layers panel vs. guarantee edits are visible in Illustrator
+};
+
+// Layers matching these name patterns are treated like your script's layersToSkip list
+// (reference/background art) — hidden from the live view by default for performance,
+// but never altered and fully restored on export.
+const SKIP_NAME_PATTERNS = ['reference', 'background', /(^|[^a-z])bg([^a-z]|$)/];
+// Any single embedded image whose base64 payload is bigger than this is set aside
+// BEFORE the file is even parsed into the DOM — a multi-MB inline photo is almost
+// always a reference backdrop, not editable floor plan artwork, and parsing/rendering
+// it inline is what makes huge exported files unusable in the browser. The original
+// bytes are kept in memory and restored automatically when you export.
+const LARGE_IMAGE_CHAR_THRESHOLD = 400000; // ~300KB decoded
+const TINY_PNG_PLACEHOLDER = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+function matchesSkipPattern(text){
+  const t = (text||'').toLowerCase();
+  return SKIP_NAME_PATTERNS.some(p => typeof p === 'string' ? t.indexOf(p) !== -1 : p.test(t));
+}
+
+/* Strip oversized embedded images out of the raw SVG text BEFORE DOMParser ever
+   touches it, so multi-hundred-MB files parse and render like small ones.
+   Original image bytes are preserved for lossless restoration on export. */
+function preprocessSvgText(text){
+  const largeImages = [];
+  let pgfInfo = null;
+  let cleaned = text;
+
+  // Illustrator's PGF/foreignObject wrapper (restored below, if the user keeps it)
+  // can contain raw entity references like &ns_ai; that are only defined in the
+  // file's own <!DOCTYPE ... [ <!ENTITY ns_ai "..."> ... ]> internal subset. Our
+  // export only ever serializes the <svg> element itself (not the full XML
+  // document), so that DOCTYPE was never being included — harmless while the PGF
+  // stayed stripped (nothing left to reference an undefined entity), but a real
+  // problem now that restoring the PGF is the default: an undefined entity makes
+  // the exported file invalid XML, which is exactly what a strict parser (like
+  // Illustrator) will refuse to open. Capturing and always re-emitting the
+  // original DOCTYPE fixes this regardless of whether PGF gets restored or not.
+  let originalDoctype = null;
+  const doctypeMatch = cleaned.match(/<!DOCTYPE\s+svg[^\[>]*(\[[\s\S]*?\])?\s*>/);
+  if(doctypeMatch){
+    originalDoctype = doctypeMatch[0];
+    // Deliberately NOT removed from `cleaned` — the root <svg> tag itself may also
+    // reference these same entities (e.g. xmlns:i="&ns_ai;"), so DOMParser still
+    // needs the DOCTYPE present to resolve them correctly while parsing the main
+    // document. We only need our own COPY of it, to re-emit on export later
+    // (since serializing just the <svg> element drops the DOCTYPE entirely).
+  }
+
+  // Illustrator embeds a complete, compressed, proprietary snapshot of the artwork
+  // (an <i:aipgf> block) purely so that ILLUSTRATOR ITSELF can round-trip the file
+  // with full fidelity when it reopens it — and Illustrator prioritizes that snapshot
+  // over the plain SVG markup underneath. Since we can only ever edit the plain SVG
+  // (that's all any non-Illustrator tool, including browsers, understands), leaving
+  // this snapshot in an exported file means Illustrator would keep showing the
+  // ORIGINAL unedited artwork, ignoring every change made here. There's no way to
+  // update this proprietary blob to match our edits, so it's stripped for good —
+  // this also happens to be the actual dominant contributor to file size on some
+  // exports (it can be over 99% of the file), not just embedded images.
+  //
+  // Illustrator has used at least two different wrapper styles for this, seen
+  // across different export settings:
+  //   (a) <switch><foreignObject><i:aipgfRef xlink:href="#id"></i:aipgfRef></foreignObject>...</switch>
+  //       with the actual <i:aipgf id="..."> data block appearing later, standalone.
+  //   (b) <metadata><i:aipgfRef id="..."/><i:aipgf id="...">...</i:aipgf></metadata>
+  //       as one self-contained block, typically the last child before </svg>.
+  // Restoration needs a reliable anchor for BOTH — re-inserting right before </svg>
+  // works for both styles without needing a <switch> tag to exist at all.
+  let removedPgfBlock = null, removedForeignObject = null, pgfRestoreMode = null;
+
+  const metaMatch = cleaned.match(/<metadata>\s*<i:aipgfRef\b[\s\S]*?<\/metadata>/);
+  if(metaMatch){
+    pgfInfo = { bytes: metaMatch[0].length };
+    removedPgfBlock = metaMatch[0];
+    pgfRestoreMode = 'beforeSvgClose';
+    cleaned = cleaned.replace(metaMatch[0], '');
+  } else {
+    const pgfMatch = cleaned.match(/<i:aipgf\b[^>]*>[\s\S]*?<\/i:aipgf>/);
+    if(pgfMatch){
+      pgfInfo = { bytes: pgfMatch[0].length };
+      removedPgfBlock = pgfMatch[0];
+      pgfRestoreMode = 'afterSwitchClose';
+      cleaned = cleaned.replace(pgfMatch[0], '');
+      // The <foreignObject><i:aipgfRef .../></foreignObject> wrapper that pointed to it
+      // is now dead weight too — drop it so nothing is left dangling.
+      const foMatch = cleaned.match(/<foreignObject\b[^>]*>\s*<i:aipgfRef\b[^>]*>\s*<\/i:aipgfRef>\s*<\/foreignObject>/);
+      if(foMatch){
+        removedForeignObject = foMatch[0];
+        cleaned = cleaned.replace(foMatch[0], '');
+      }
+      // No <switch> tag to anchor restoration to — fall back to the reliable
+      // "just before </svg>" anchor instead, which works regardless of wrapper style.
+      if(!cleaned.includes('<switch>')) pgfRestoreMode = 'beforeSvgClose';
+    }
+  }
+
+  const rx = /(xlink:href|href)\s*=\s*"data:image\/([a-zA-Z0-9.+_-]+);base64,([^"]*)"/g;
+  cleaned = cleaned.replace(rx, (match, attr, mime, b64) => {
+    if(b64.length <= LARGE_IMAGE_CHAR_THRESHOLD) return match;
+    const refId = 'ufimg' + largeImages.length;
+    largeImages.push({ refId, mime, b64 });
+    return `${attr}="data:image/png;base64,${TINY_PNG_PLACEHOLDER}" data-uf-large-image="${refId}"`;
+  });
+
+  cleaned = uniquifyRawDuplicateIds(cleaned);
+
+  return { cleaned, largeImages, pgfInfo, removedPgfBlock, removedForeignObject, pgfRestoreMode, originalDoctype };
+}
+
+/* Every floor's internal structure typically reuses the exact same generic
+   sub-group names ("type:UnitLayer", "type:HitAreaLayer", etc.) once per
+   floor, identically — technically invalid SVG, since id values are supposed
+   to be unique document-wide. This is done at the RAW TEXT level, before any
+   parser touches the file, specifically because different parsers handle
+   duplicate ids differently under the hood (some silently disambiguate them
+   during parsing in ways that are hard to predict or test against) — fixing
+   it before parsing sidesteps that uncertainty entirely and guarantees the
+   result regardless of which browser or environment eventually opens it. */
+function uniquifyRawDuplicateIds(text){
+  function uniquifyAttr(str, attrName){
+    const counts = {};
+    const re = new RegExp('\\s' + attrName + '="([^"]*)"', 'g');
+    let m;
+    while((m = re.exec(str)) !== null){
+      if(!m[1]) continue;
+      counts[m[1]] = (counts[m[1]] || 0) + 1;
+    }
+    const seen = {};
+    return str.replace(re, (full, val) => {
+      if(!val || counts[val] <= 1) return full;
+      seen[val] = (seen[val] || 0) + 1;
+      return ` ${attrName}="${val}__dup${seen[val]}"`;
+    });
+  }
+  let out = uniquifyAttr(text, 'id');
+  out = uniquifyAttr(out, 'data-name');
+  return out;
+}
+
+const $ = (sel, root) => (root||document).querySelector(sel);
+const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
+
+/* ---------------- Toast / Log ---------------- */
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function log(type, msg){
+  const body = $('#logbody');
+  const icon = type==='ok' ? '✓' : type==='err' ? '✕' : '›';
+  const div = document.createElement('div');
+  div.className = 'logline ' + type;
+  div.innerHTML = `<span class="icn">${icon}</span><span class="txt">${msg}</span>`;
+  body.prepend(div);
+  const count = body.children.length;
+  $('#logcount').textContent = `— ${count} ${count===1?'entry':'entries'}`;
+}
+
+/* ---------------- History / Undo ---------------- */
+function updateUndoButton(){
+  const n = state.history.length;
+  $('#btnUndo').disabled = n === 0;
+  $('#btnUndo').classList.toggle('undo-ready', n > 0);
+  $('#undoLabel').textContent = n > 0 ? `Undo (${n})` : 'Undo';
+}
+function maxUndoSteps(){
+  // A full document snapshot is stored per undo step — for a 100MB+ file that adds
+  // up fast (25 steps could mean 2.5+ GB in memory). Scale the cap down for large
+  // files to avoid tab memory pressure, which can cause other operations (like
+  // Export, which also clones/serializes the whole document) to fail silently.
+  const size = state.fileSizeBytes || 0;
+  if(size > 60*1024*1024) return 3;
+  if(size > 20*1024*1024) return 8;
+  return 25;
+}
+function pushHistory(){
+  if(!state.svgEl) return;
+  state.history.push(state.svgEl.outerHTML);
+  const cap = maxUndoSteps();
+  while(state.history.length > cap) state.history.shift();
+  updateUndoButton();
+}
+function undo(){
+  if(state.history.length === 0) return;
+  const html = state.history.pop();
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  const newSvg = wrap.firstElementChild;
+  state.svgEl.replaceWith(newSvg);
+  state.svgEl = newSvg;
+  rescanLayers(true);
+  clearSelection();
+  updateUndoButton();
+  toast('Undid last action');
+  log('info', 'Undo applied.');
+}
+$('#btnUndo').addEventListener('click', undo);
+window.addEventListener('keydown', e=>{
+  const isUndoKey = (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z';
+  if(isUndoKey && !$('#btnUndo').disabled){
+    e.preventDefault();
+    undo();
+  }
+});
+
+/* ---------------- File loading ---------------- */
+$('#btnOpenSvg').addEventListener('click', ()=> $('#fileSvg').click());
+$('#fileSvg').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(f) loadSvgFile(f);
+});
+
+function loadSvgFile(file){
+  const bigFile = file.size > 15 * 1024 * 1024;
+  state.fileSizeBytes = file.size;
+  if(bigFile){
+    toast(`Reading ${(file.size/1024/1024).toFixed(0)}MB file — this may take a moment…`);
+    log('info', `Reading <b>${escapeHtml(file.name)}</b> (${(file.size/1024/1024).toFixed(0)}MB)…`);
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const rawText = reader.result;
+      const { cleaned, largeImages, pgfInfo, removedPgfBlock, removedForeignObject, pgfRestoreMode, originalDoctype } = preprocessSvgText(rawText);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(cleaned, 'image/svg+xml');
+      const errNode = doc.querySelector('parsererror');
+      if(errNode) throw new Error('The file is not valid SVG/XML.');
+      const svg = doc.documentElement;
+      // Browsers default an <svg> with no width/height attributes to a tiny intrinsic
+      // size (often 300x150) even when it has a viewBox — the internal coordinate system
+      // stays correct (which is why layer/unit detection works) but nothing paints at a
+      // usable size. Force explicit width/height so 1 SVG unit = 1 CSS pixel at our
+      // baseline zoom, matching what our pan/zoom transform math assumes.
+      const vb = svg.getAttribute('viewBox');
+      if(vb){
+        const parts = vb.trim().split(/[\s,]+/).map(Number);
+        if(parts.length===4 && parts[2]>0 && parts[3]>0){
+          svg.setAttribute('width', parts[2]);
+          svg.setAttribute('height', parts[3]);
+        }
+      } else if(!svg.getAttribute('width') || !svg.getAttribute('height')){
+        svg.setAttribute('width', '1000');
+        svg.setAttribute('height', '1000');
+      }
+      $('#stage').innerHTML = '';
+      $('#stage').appendChild(svg);
+      state.svgEl = svg;
+      state.fileName = file.name;
+      state.history = [];
+      state.showRefLayers = false;
+      state.showLargeImages = false;
+      state.largeImageData = largeImages;
+      state.strippedPgfBlock = removedPgfBlock;
+      state.strippedPgfForeignObject = removedForeignObject;
+      state.pgfRestoreMode = pgfRestoreMode;
+      state.originalDoctype = originalDoctype;
+      state.keepIllustratorLayers = true;
+      $('#btnUndo').disabled = true;
+      $('#btnUndo').classList.remove('undo-ready');
+      $('#undoLabel').textContent = 'Undo';
+      $('#filename').textContent = file.name;
+      $('#tbFile').textContent = file.name;
+      $('#emptyState').style.display = 'none';
+      $('#titleblock').style.display = 'grid';
+      $('#btnExport').disabled = false;
+      rescanLayers(true);
+      const firstUsable = state.layers.find(l => l.tagged && !l.skipRender) || state.layers.find(l => !l.skipRender);
+      if(firstUsable) selectLayer(firstUsable.idx);
+      else fitToView();
+      clearSelection();
+      log('ok', `Loaded <b>${escapeHtml(file.name)}</b>.`);
+      if(pgfInfo){
+        const mb = (pgfInfo.bytes/1024/1024).toFixed(0);
+        log('info', `This file has an embedded Illustrator compatibility snapshot (~${mb}MB). By default this export will KEEP it, so Illustrator's Layers panel matches your original structure — but that also means Illustrator will show the pre-edit artwork, not your changes, if this file is reopened there. Uncheck "Keep Illustrator layers" next to Export if you'd rather guarantee edits are visible in Illustrator instead (Layers panel will then show one flat layer). The real fix is upstream: re-export from Illustrator with "Preserve Illustrator Editing Capabilities" unchecked, and this snapshot won't exist at all next time.`);
+        $('#keepIllustratorLayersWrap').style.display = 'flex';
+        $('#chkKeepIllustratorLayers').checked = true;
+        $('#pgfBannerText').textContent = `This file has an embedded Illustrator snapshot (~${mb}MB) — Illustrator will show pre-edit artwork unless you fix this at export, in this file, or upstream.`;
+        $('#pgfBanner').style.display = 'flex';
+      } else {
+        $('#keepIllustratorLayersWrap').style.display = 'none';
+        $('#pgfBanner').style.display = 'none';
+      }
+      if(bigFile){
+        const cap = maxUndoSteps();
+        if(cap < 25) log('info', `This file is large enough that Undo history is limited to the last ${cap} action(s), to avoid running the browser tab low on memory.`);
+      }
+      if(largeImages.length > 0){
+        const totalMb = largeImages.reduce((s,i)=>s+i.b64.length,0)/1024/1024*0.75;
+        log('info', `Set aside ${largeImages.length} large embedded image(s) (~${totalMb.toFixed(0)}MB) before loading, so the plan opens fast. They're kept in memory and restored automatically when you export — toggle "Show large images" in the Layers tab if you need to see them while editing.`);
+        $('#largeImageToggleWrap').style.display = 'block';
+        $('#largeImageCount').textContent = largeImages.length;
+      } else {
+        $('#largeImageToggleWrap').style.display = 'none';
+      }
+    }catch(err){
+      toast('Could not load SVG: ' + err.message);
+      log('err', 'Failed to load SVG — ' + escapeHtml(err.message));
+    }
+  };
+  reader.onerror = () => {
+    toast('Could not read that file.');
+    log('err', 'File read failed — the browser reported an error reading the file.');
+  };
+  reader.readAsText(file);
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+$('#chkShowRef').addEventListener('change', e=>{
+  state.showRefLayers = e.target.checked;
+  applyRefLayerVisibility();
+  if(state.svgEl) fitToView();
+});
+$('#chkFocusLayer').addEventListener('change', e=>{
+  state.focusSelectedLayer = e.target.checked;
+  applyLayerFocusVisibility();
+});
+$('#chkShowLargeImages').addEventListener('change', e=>{
+  state.showLargeImages = e.target.checked;
+  applyLargeImageVisibility();
+  if(e.target.checked) toast('Showing large images — this may be slow to render');
+  if(state.svgEl) fitToView();
+});
+
+/* ---------------- Reference CSV (Unit ID -> friendly Building/Floor number) ---------------- */
+function parseUnitRefCsv(text){
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const lines = text.split('\n').filter(l=>l.trim().length);
+  if(lines.length < 2) return [];
+  const headers = splitCsvLine(lines[0]).map(h=>h.toLowerCase().trim());
+  let idIdx=-1, numIdx=-1, bIdx=-1, fIdx=-1;
+  headers.forEach((h,i)=>{
+    if(idIdx===-1 && h.indexOf('unit id')!==-1) idIdx=i;
+    if(numIdx===-1 && h.indexOf('unit number')!==-1) numIdx=i;
+    if(bIdx===-1 && h.indexOf('building')!==-1) bIdx=i;
+    if(fIdx===-1 && h.indexOf('floor')!==-1 && h.indexOf('floor plan')===-1) fIdx=i;
+  });
+  if(idIdx===-1 || bIdx===-1 || fIdx===-1){
+    throw new Error("Couldn't find Unit ID / Building / Floor columns.");
+  }
+  const out = [];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim()) continue;
+    const c = splitCsvLine(lines[i]);
+    const row = {
+      unitId: (c[idIdx]||'').replace(/\.0$/,''),
+      unitNumber: numIdx!==-1 ? (c[numIdx]||'').replace(/\.0$/,'') : '',
+      building: (c[bIdx]||'').replace(/\.0$/,''),
+      floor: (c[fIdx]||'').replace(/\.0$/,'')
+    };
+    if(row.unitId && row.building && row.floor) out.push(row);
+  }
+  return out;
+}
+
+/* For each tagged layer, find one internal Unit ID embedded in its shapes (id:XXXXX),
+   look it up in the reference CSV, and use that row's Building/Floor NUMBER as the
+   layer's friendly label — since a whole floor's units all share the same building/floor. */
+function resolveFriendlyLayerNames(){
+  if(!state.unitRefRows.length) return;
+  const byId = {};
+  state.unitRefRows.forEach(r=>{ byId[r.unitId] = r; });
+  state.layers.forEach(layer=>{
+    if(layer.skipRender) return;
+    const shapes = $$('[id^="id:"]', layer.el);
+    for(const el of shapes){
+      const m = (el.getAttribute('id')||'').match(/^id:(\d+)/);
+      if(m && byId[m[1]]){
+        layer.friendlyBuilding = byId[m[1]].building;
+        layer.friendlyFloor = byId[m[1]].floor;
+        layer.tagged = true;
+        return;
+      }
+    }
+  });
+}
+
+function layerLabel(layer){
+  if(layer.friendlyBuilding && layer.friendlyFloor) return `Building ${layer.friendlyBuilding} · Floor ${layer.friendlyFloor}`;
+  if(layer.tagged) return `B${layer.building} · F${layer.floor}`;
+  return 'untagged';
+}
+
+$('#refCsvDrop').addEventListener('click', ()=> $('#fileRefCsv').click());
+$('#refCsvDrop').addEventListener('dragover', e=>{ e.preventDefault(); $('#refCsvDrop').classList.add('drag'); });
+$('#refCsvDrop').addEventListener('dragleave', ()=> $('#refCsvDrop').classList.remove('drag'));
+$('#refCsvDrop').addEventListener('drop', e=>{
+  e.preventDefault(); $('#refCsvDrop').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if(f) loadUnitRefCsv(f);
+});
+$('#fileRefCsv').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadUnitRefCsv(f); });
+
+function loadUnitRefCsv(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const rows = parseUnitRefCsv(reader.result);
+      if(!rows.length){ toast('No valid rows found in that CSV'); return; }
+      state.unitRefRows = rows;
+      resolveFriendlyLayerNames();
+      renderLayerList();
+      updateTitleBlock();
+      if(state.selectedLayerIdx!==null){
+        const layer = state.layers[state.selectedLayerIdx];
+        $('#tbSelection').textContent = layerLabel(layer);
+      }
+      const matched = state.layers.filter(l=>l.friendlyBuilding).length;
+      $('#refCsvStatus').style.display = 'block';
+      $('#refCsvStatus').textContent = `Loaded ${rows.length} rows — matched friendly numbers for ${matched}/${state.layers.filter(l=>!l.skipRender).length} layers.`;
+      log('ok', `Loaded reference CSV <b>${escapeHtml(file.name)}</b> — matched ${matched} layers to Building/Floor numbers.`);
+    }catch(err){
+      toast('CSV error: ' + err.message);
+      log('err', 'Reference CSV parse failed — ' + escapeHtml(err.message));
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------------- Layer detection & tagging ---------------- */
+function rescanLayers(keepTags){
+  const prevTags = keepTags ? state.layers.map(l=>({building:l.building, floor:l.floor, tagged:l.tagged, key:l.key})) : null;
+  state.layers = [];
+  if(!state.svgEl) return;
+
+  // Primary: recursively search the WHOLE tree for <g> elements matching our
+  // building/floor tagging convention or the reference/background skip patterns,
+  // regardless of how deeply nested they are. Illustrator adds extra wrapper levels
+  // in some export configurations (e.g. embedding an SVG font triggers a
+  // <switch><foreignObject>...<g i:extraneous="self"> compatibility wrapper), so
+  // assuming a fixed nesting depth misses the real layers entirely.
+  const allGroups = $$('g', state.svgEl);
+  const candidates = allGroups.filter(el=>{
+    const idOrClass = (el.getAttribute('id')||'') + ' ' + (el.getAttribute('class')||'') + ' ' + (el.getAttribute('data-name')||'');
+    const guess = guessBuildingFloor(idOrClass);
+    return (guess.building && guess.floor) || matchesSkipPattern(idOrClass);
+  });
+  const candidateSet = new Set(candidates);
+  let groups = candidates.filter(el=>{
+    let p = el.parentNode;
+    while(p && p !== state.svgEl){
+      if(candidateSet.has(p)) return false; // an ancestor already matched — keep only the outermost
+      p = p.parentNode;
+    }
+    return true;
+  });
+
+  // Fallback for files that don't use this naming convention at all: direct
+  // children of the root <svg>, or one level deeper.
+  if(groups.length === 0){
+    groups = Array.from(state.svgEl.children).filter(el => el.tagName === 'g');
+    if(groups.length === 0){
+      Array.from(state.svgEl.children).forEach(c=>{
+        Array.from(c.children||[]).forEach(gc=>{ if(gc.tagName==='g') groups.push(gc); });
+      });
+    }
+  }
+  groups.forEach((el, idx)=>{
+    el.setAttribute('data-uf-layer', idx);
+    const idOrClass = (el.getAttribute('id')||'') + ' ' + (el.getAttribute('class')||'') + ' ' + (el.getAttribute('data-name')||'');
+    const guess = guessBuildingFloor(idOrClass);
+    const layer = {
+      el, idx,
+      building: guess.building || '',
+      floor: guess.floor || '',
+      tagged: !!(guess.building && guess.floor),
+      key: (guess.building||'') + '.' + (guess.floor||''),
+      guessedName: idOrClass.trim() || `Layer ${idx+1}`,
+      skipRender: matchesSkipPattern(idOrClass)
+    };
+    state.layers.push(layer);
+  });
+  if(prevTags){
+    // best-effort: restore previous tags by index if counts match
+    if(prevTags.length === state.layers.length){
+      state.layers.forEach((l,i)=>{
+        if(prevTags[i].tagged){ l.building = prevTags[i].building; l.floor = prevTags[i].floor; l.tagged = true; l.key = l.building+'.'+l.floor; }
+      });
+    }
+  }
+  if(state.unitRefRows.length) resolveFriendlyLayerNames();
+  uniquifyDuplicateSublayerNames();
+  renderLayerList();
+  updateTitleBlock();
+  applyRefLayerVisibility();
+  applyLargeImageVisibility();
+  applyLayerFocusVisibility();
+}
+
+/* Every floor's internal structure typically reuses the exact same generic
+   sub-group names — "type:UnitLayer", "type:HitAreaLayer", "label:outlines,
+   type:Layer", etc. — once per floor, identically. That's technically invalid
+   SVG (id values are supposed to be unique document-wide), and it's exactly
+   what makes Illustrator auto-append a counter (like "...Layer22") when it
+   imports the file, since it has to disambiguate what would otherwise be
+   duplicate internal names. This finds any id/data-name value that repeats
+   across more than one tagged layer and appends that specific layer's
+   building/floor to make it unique — nothing Illustrator needs to rename on
+   its own afterward. A real Unit ID (from the reference CSV) is already
+   unique per physical unit, so those are naturally left untouched; only the
+   genuinely-duplicated generic container names ever get flagged. */
+function uniquifyDuplicateSublayerNames(){
+  if(!state.svgEl) return 0;
+  const taggedLayers = state.layers.filter(l => l.tagged && !l.skipRender);
+  if(taggedLayers.length < 2) return 0;
+
+  const valueLayerSets = {};
+  taggedLayers.forEach(layer=>{
+    const seenInThisLayer = new Set();
+    $$('[id], [data-name]', layer.el).forEach(el=>{
+      ['id','data-name'].forEach(attr=>{
+        const v = el.getAttribute(attr);
+        if(!v) return;
+        const key = attr + ':' + v;
+        if(!valueLayerSets[key]) valueLayerSets[key] = new Set();
+        if(!seenInThisLayer.has(key)){
+          valueLayerSets[key].add(layer.idx);
+          seenInThisLayer.add(key);
+        }
+      });
+    });
+  });
+
+  let renamedCount = 0;
+  taggedLayers.forEach(layer=>{
+    const suffix = `_B${layer.building}_F${layer.floor}`;
+    $$('[id], [data-name]', layer.el).forEach(el=>{
+      ['id','data-name'].forEach(attr=>{
+        const v = el.getAttribute(attr);
+        if(!v || v.endsWith(suffix)) return; // idempotent guard — already uniquified
+        const key = attr + ':' + v;
+        if(valueLayerSets[key] && valueLayerSets[key].size > 1){
+          el.setAttribute(attr, v + suffix);
+          renamedCount++;
+        }
+      });
+    });
+  });
+  return renamedCount;
+}
+
+function hideLargeEmbeddedImages(svg){
+  // Secondary safety net: catches any oversized image the text-level preprocessor
+  // missed (e.g. unusual attribute quoting). These weren't captured with restorable
+  // bytes, so they're just visually hidden — they remain untouched in the exported file.
+  let hiddenCount = 0;
+  $$('image', svg).forEach(img=>{
+    if(img.hasAttribute('data-uf-large-image')) return; // already handled by preprocessor
+    const href = img.getAttribute('xlink:href') || img.getAttribute('href') || '';
+    if(href.length > LARGE_IMAGE_CHAR_THRESHOLD){
+      img.classList.add('uf-perf-hidden');
+      img.setAttribute('data-uf-fallback-large-image', '1');
+      hiddenCount++;
+    }
+  });
+  return { hiddenCount };
+}
+
+function applyRefLayerVisibility(){
+  state.layers.forEach(layer=>{
+    if(layer.skipRender && !state.showRefLayers) layer.el.classList.add('uf-perf-hidden');
+    else layer.el.classList.remove('uf-perf-hidden');
+  });
+}
+function applyLayerFocusVisibility(){
+  const hasSelection = state.selectedLayerIdx !== null;
+  state.layers.forEach(layer=>{
+    if(layer.skipRender) return;
+    if(!state.focusSelectedLayer || !hasSelection){ layer.el.classList.remove('uf-not-focused'); return; }
+    if(layer.idx === state.selectedLayerIdx) layer.el.classList.remove('uf-not-focused');
+    else layer.el.classList.add('uf-not-focused');
+  });
+}
+function applyLargeImageVisibility(){
+  if(!state.svgEl) return;
+  hideLargeEmbeddedImages(state.svgEl); // catch any stragglers each time this runs
+  $$('[data-uf-fallback-large-image]', state.svgEl).forEach(img=>{
+    if(state.showLargeImages) img.classList.remove('uf-perf-hidden');
+    else img.classList.add('uf-perf-hidden');
+  });
+  $$('[data-uf-large-image]', state.svgEl).forEach(el=>{
+    const refId = el.getAttribute('data-uf-large-image');
+    const rec = state.largeImageData.find(r=>r.refId===refId);
+    if(!rec) return;
+    const dataUri = state.showLargeImages
+      ? `data:image/${rec.mime};base64,${rec.b64}`
+      : `data:image/png;base64,${TINY_PNG_PLACEHOLDER}`;
+    if(el.hasAttribute('xlink:href')) el.setAttribute('xlink:href', dataUri);
+    if(el.hasAttribute('href')) el.setAttribute('href', dataUri);
+  });
+}
+
+function guessBuildingFloor(text){
+  let building = '', floor = '';
+  let m = text.match(/building[:\-_ ]?\s*([a-z0-9]+)/i);
+  if(m) building = m[1];
+  m = text.match(/floor[:\-_ ]?\s*([a-z0-9]+)/i);
+  if(m) floor = m[1];
+  if(!building || !floor){
+    m = text.match(/\bb[\-_]?(\d+)[_\-\s]*f[\-_]?(\d+)(?!\d)/i);
+    if(m){ building = building || m[1]; floor = floor || m[2]; }
+  }
+  return { building, floor };
+}
+
+function renderLayerList(){
+  const wrap = $('#layerList');
+  wrap.innerHTML = '';
+  state.layers.forEach(layer=>{
+    const row = document.createElement('div');
+    row.className = 'layer-row' + (layer.tagged ? ' tagged' : '') + (state.selectedLayerIdx===layer.idx ? ' selected' : '');
+    row.innerHTML = `<span class="swatch"></span><span class="name">${escapeHtml(layer.guessedName)}</span><span class="tag">${layer.skipRender ? 'hidden' : escapeHtml(layerLabel(layer))}</span>`;
+    row.addEventListener('click', ()=> selectLayer(layer.idx));
+    wrap.appendChild(row);
+  });
+  const taggedCount = state.layers.filter(l=>l.tagged).length;
+  $('#tbLayers').textContent = state.layers.length;
+  $('#tbTagged').textContent = taggedCount;
+}
+
+function selectLayer(idx){
+  state.selectedLayerIdx = idx;
+  renderLayerList();
+  const layer = state.layers[idx];
+  $('#layerTagEditor').style.display = 'block';
+  $('#tagBuilding').value = layer.building;
+  $('#tagFloor').value = layer.floor;
+  renderUnitTable(layer);
+  $('#tbSelection').textContent = layerLabel(layer);
+  applyLayerFocusVisibility();
+  if(!layer.skipRender) fitToLayer(layer);
+}
+
+$('#btnSaveTag').addEventListener('click', ()=>{
+  if(state.selectedLayerIdx===null) return;
+  const layer = state.layers[state.selectedLayerIdx];
+  layer.building = $('#tagBuilding').value.trim();
+  layer.floor = $('#tagFloor').value.trim();
+  layer.tagged = !!(layer.building && layer.floor);
+  layer.key = layer.building + '.' + layer.floor;
+  renderLayerList();
+  updateTitleBlock();
+  toast('Layer tagged');
+  log('ok', `Tagged <b>${escapeHtml(layer.guessedName)}</b> as Building ${escapeHtml(layer.building)} / Floor ${escapeHtml(layer.floor)}.`);
+});
+$('#btnCancelTag').addEventListener('click', ()=>{ $('#layerTagEditor').style.display='none'; });
+
+function updateTitleBlock(){
+  $('#tbLayers').textContent = state.layers.length;
+  $('#tbTagged').textContent = state.layers.filter(l=>l.tagged).length;
+}
+
+/* ---------------- Unit / bundle detection ---------------- */
+/* getBBox() reports an element's geometry BEFORE that element's own transform is
+   applied — it only includes transforms on descendants, never the element itself.
+   Since every unit label here is positioned via its own transform="translate(x y)",
+   raw getBBox() only ever returns a tiny box near the origin (the glyph shape),
+   not the label's real position on the plan. getCTM() gives the actual matrix the
+   browser uses to map this element's local space all the way to the root SVG's
+   coordinate space — composing every translate/rotate/scale in between correctly,
+   so we use it to convert the raw bbox into a real, comparable position. */
+function getAdjustedBBox(el){
+  let bb; try{ bb = el.getBBox(); }catch(e){ return null; }
+  let ctm; try{ ctm = el.getCTM(); }catch(e){ ctm = null; }
+  if(!ctm) return { x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+  // Transform all 4 corners (not just the center + a scale factor) to get
+  // the TRUE axis-aligned bounding box after the transform. The old
+  // center+scale approach silently assumed the transform was pure
+  // scale/translate with no rotation — for anything rotated (e.g. vertical
+  // unit-number text via matrix(0 -1 1 0 x y), common in these files), it
+  // reported the box's original unrotated width/height unchanged, which is
+  // wrong: rotation swaps/mixes what "width" and "height" mean on screen.
+  // That wrong size fed directly into bundle-matching's proximity padding,
+  // which could reach into a neighboring unit's shape instead of the
+  // correct one on tightly-packed floors.
+  const corners = [
+    { x: bb.x, y: bb.y },
+    { x: bb.x + bb.width, y: bb.y },
+    { x: bb.x + bb.width, y: bb.y + bb.height },
+    { x: bb.x, y: bb.y + bb.height }
+  ].map(p => ({
+    x: ctm.a*p.x + ctm.c*p.y + ctm.e,
+    y: ctm.b*p.x + ctm.d*p.y + ctm.f
+  }));
+  const xs = corners.map(c=>c.x), ys = corners.map(c=>c.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  return { x: minX, y: minY, width: maxX-minX, height: maxY-minY };
+}
+
+/* ---------------- Combine/Split geometry utilities ----------------
+   Shapes need to be converted to plain [x,y] polygon rings for boolean
+   union/intersection (via the polygon-clipping library), then back into
+   SVG points once the operation is done. Coordinates are moved into root
+   SVG space using each element's CTM before the boolean op, then mapped
+   back into whichever parent the result will live in using that parent's
+   inverse CTM — this keeps things correct even if a shape or its ancestors
+   carry a transform, rather than assuming everything is already untransformed. */
+function applyMatrixToPoint(m, x, y){
+  return { x: m.a*x + m.c*y + m.e, y: m.b*x + m.d*y + m.f };
+}
+function invertMatrix(m){
+  const det = m.a*m.d - m.b*m.c;
+  if(Math.abs(det) < 1e-12) return { a:1,b:0,c:0,d:1,e:0,f:0 }; // degenerate, fall back to identity
+  const ia = m.d/det, ib = -m.b/det, ic = -m.c/det, id = m.a/det;
+  const ie = -(ia*m.e + ic*m.f), ifv = -(ib*m.e + id*m.f);
+  return { a: ia, b: ib, c: ic, d: id, e: ie, f: ifv };
+}
+function getCTMSafe(el){
+  try{ const m = el.getCTM(); if(m) return { a:m.a, b:m.b, c:m.c, d:m.d, e:m.e, f:m.f }; }catch(e){}
+  return { a:1,b:0,c:0,d:1,e:0,f:0 };
+}
+
+/* Extracts a shape's outline as a flat array of [x,y] points in ROOT SVG
+   space. Polygons/rects/straight-line paths are parsed exactly; anything
+   with curves falls back to sampling along the rendered path length, since
+   floor-plan unit outlines are close to universally straight-edged and
+   curves are rare enough that exactness there isn't worth the complexity. */
+function shapeToRootSpacePoints(el){
+  const ctm = getCTMSafe(el);
+  let localPts = [];
+
+  if(el.tagName === 'polygon' || el.tagName === 'polyline'){
+    const raw = (el.getAttribute('points')||'').trim();
+    localPts = raw.split(/\s+/).filter(Boolean).map(pair=>{
+      const [x,y] = pair.split(',').map(Number);
+      return {x,y};
+    });
+  } else if(el.tagName === 'rect'){
+    const x = parseFloat(el.getAttribute('x')||0), y = parseFloat(el.getAttribute('y')||0);
+    const w = parseFloat(el.getAttribute('width')||0), h = parseFloat(el.getAttribute('height')||0);
+    localPts = [{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}];
+  } else if(el.tagName === 'path'){
+    const d = el.getAttribute('d')||'';
+    const isStraightOnly = /^[\sMLZmlz0-9eE.,+-]*$/.test(d);
+    if(isStraightOnly){
+      const tokens = d.match(/[MLZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) || [];
+      let i = 0, cur = {x:0,y:0};
+      while(i < tokens.length){
+        const cmd = tokens[i];
+        if(/[ML]/i.test(cmd)){
+          i++;
+          const x = parseFloat(tokens[i++]), y = parseFloat(tokens[i++]);
+          cur = {x,y};
+          localPts.push(cur);
+        } else if(/Z/i.test(cmd)){
+          i++;
+        } else {
+          i++; // skip unexpected token defensively
+        }
+      }
+    } else {
+      // Has curves — sample along the rendered length instead of parsing.
+      try{
+        const len = el.getTotalLength();
+        const steps = Math.max(24, Math.min(400, Math.round(len/2)));
+        for(let s=0; s<steps; s++){
+          const p = el.getPointAtLength(len * s/steps);
+          localPts.push({x:p.x, y:p.y});
+        }
+      }catch(e){ return null; }
+    }
+  } else {
+    // circle/ellipse or anything else — sample via rendered length.
+    try{
+      const len = el.getTotalLength();
+      const steps = Math.max(24, Math.min(200, Math.round(len/2)));
+      for(let s=0; s<steps; s++){
+        const p = el.getPointAtLength(len * s/steps);
+        localPts.push({x:p.x, y:p.y});
+      }
+    }catch(e){ return null; }
+  }
+
+  if(localPts.length < 3) return null;
+  return localPts.map(p => applyMatrixToPoint(ctm, p.x, p.y));
+}
+
+/* polygon-clipping expects/returns rings as [[x,y],[x,y],...] with the
+   first ring of each polygon being the outer boundary (holes as
+   subsequent rings — not used here, floor plan units don't have holes). */
+function rootPointsToClippingPolygon(points){
+  const ring = points.map(p => [p.x, p.y]);
+  if(ring.length){
+    const first = ring[0], last = ring[ring.length-1];
+    if(first[0] !== last[0] || first[1] !== last[1]) ring.push([first[0], first[1]]);
+  }
+  return [ring];
+}
+
+/* Takes the largest ring from a polygon-clipping result (a MultiPolygon:
+   Polygon[][][2]) and maps it from root SVG space into targetParent's own
+   local coordinate space, returning an SVG points="" string ready to set
+   directly on a new <polygon>. */
+function clippingResultToLocalPointsString(multiPolygon, targetParent){
+  if(!multiPolygon || multiPolygon.length === 0) return null;
+  let best = null, bestArea = -1;
+  multiPolygon.forEach(poly=>{
+    const ring = poly[0]; // outer ring only, ignore holes
+    if(!ring || ring.length < 3) return;
+    let area = 0;
+    for(let i=0;i<ring.length;i++){
+      const [x1,y1] = ring[i], [x2,y2] = ring[(i+1)%ring.length];
+      area += x1*y2 - x2*y1;
+    }
+    area = Math.abs(area/2);
+    if(area > bestArea){ bestArea = area; best = ring; }
+  });
+  if(!best) return null;
+
+  const parentCTM = getCTMSafe(targetParent);
+  const inv = invertMatrix(parentCTM);
+  const localPts = best.map(([x,y]) => applyMatrixToPoint(inv, x, y));
+  return localPts.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
+}
+
+/* Creates a new <polygon> in targetParent with the given points string,
+   copying presentation attributes (fill/stroke/etc.) from a source shape
+   so the merged/split result visually matches the originals. */
+function createPolygonLike(sourceEl, targetParent, pointsStr, newId){
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const poly = document.createElementNS(svgNS, 'polygon');
+  poly.setAttribute('points', pointsStr);
+  if(sourceEl){
+    ['id','class','data-name','fill','stroke','stroke-width','style','fill-opacity','stroke-opacity'].forEach(attr=>{
+      const v = sourceEl.getAttribute(attr);
+      if(v !== null) poly.setAttribute(attr, v);
+    });
+  }
+  if(newId) poly.setAttribute('id', newId);
+  targetParent.appendChild(poly);
+  return poly;
+}
+
+function getUnitsInLayer(layer){
+  const wasHidden = layer.el.classList.contains('uf-not-focused') || layer.el.classList.contains('uf-perf-hidden');
+  if(wasHidden) layer.el.classList.remove('uf-not-focused', 'uf-perf-hidden');
+  try{
+    return getUnitsInLayerRaw(layer);
+  } finally {
+    if(wasHidden){
+      if(layer.skipRender && !state.showRefLayers) layer.el.classList.add('uf-perf-hidden');
+      if(state.focusSelectedLayer && state.selectedLayerIdx!==null && layer.idx!==state.selectedLayerIdx) layer.el.classList.add('uf-not-focused');
+    }
+  }
+}
+function getUnitsInLayerRaw(layer){
+  const texts = $$('text', layer.el);
+  const shapeSel = 'path,polygon,polyline,rect,circle,ellipse';
+
+  // Some files nest each unit's shape inside its OWN named group instead of
+  // as a bare leaf shape — e.g. an outlines container whose direct children
+  // are <g id="1109">, <g id="1110">, etc., one per unit, with the actual
+  // path living one level deeper inside. The named GROUP carries the
+  // meaningful id, not necessarily anything inside it, so if we only ever
+  // look for leaf shapes we never see these at all. Find the known role
+  // containers (outline / hit-area / unit layers) and use their DIRECT
+  // CHILDREN as candidates, whatever tag they are — falling back to the
+  // plain leaf-shape scan (below) for anything not covered this way.
+  const roleContainerDefs = [
+    { role: 'outline', test: (idc) => /outline/.test(idc) },
+    { role: 'hit', test: (idc) => /hitarea/.test(idc) },
+    { role: 'unit', test: (idc) => /type:unitlayer/.test(idc) }
+  ];
+  const processedContainers = new Set();
+  const shapeInfo = [];
+
+  $$('g', layer.el).forEach(g=>{
+    const idc = ((g.getAttribute('id')||'') + ' ' + (g.getAttribute('class')||'') + ' ' + (g.getAttribute('data-name')||'')).toLowerCase();
+    for(const def of roleContainerDefs){
+      if(def.test(idc)){
+        processedContainers.add(g);
+        Array.from(g.children).forEach(child=>{
+          let bbox = null;
+          try{ bbox = getAdjustedBBox(child); }catch(e){}
+          if(!bbox) return;
+          const childIdc = ((child.getAttribute('id')||'') + ' ' + (child.getAttribute('class')||'')).toLowerCase();
+          shapeInfo.push({ el: child, bbox, role: def.role, idc: childIdc });
+        });
+        break;
+      }
+    }
+  });
+
+  // Plain leaf shapes not already gathered via a role-container above —
+  // covers files where outline/unit/hit really are bare leaf shapes with no
+  // extra per-unit grouping (the original, simpler structure).
+  $$(shapeSel, layer.el).forEach(el=>{
+    let p = el.parentNode, insideProcessed = false;
+    while(p && p !== layer.el){
+      if(processedContainers.has(p)){ insideProcessed = true; break; }
+      p = p.parentNode;
+    }
+    if(insideProcessed) return;
+    let bbox = null;
+    try{ bbox = getAdjustedBBox(el); }catch(e){}
+    if(!bbox) return;
+    const idc = ((el.getAttribute('id')||'') + ' ' + (el.getAttribute('class')||'')).toLowerCase();
+    let role = null;
+    if(idc.indexOf('hit') !== -1) role = 'hit';
+    else if(idc.indexOf('outline') !== -1) role = 'outline';
+    else if(idc.indexOf('unit') !== -1) role = 'unit';
+    shapeInfo.push({ el, bbox, role, idc });
+  });
+
+  const used = new Set();
+  const bundles = [];
+
+  texts.forEach(t=>{
+    const unitStr = (t.textContent||'').trim();
+    if(!unitStr) return;
+    const tb = getAdjustedBBox(t);
+    if(!tb) return;
+    const cx = tb.x + tb.width/2, cy = tb.y + tb.height/2;
+
+    const containing = shapeInfo.filter(s=>{
+      if(used.has(s.el)) return false;
+      // Per-axis padding, not one symmetric value based on whichever
+      // dimension happens to be larger — critical for rotated text (e.g.
+      // vertical unit-number labels), where the true visual width and
+      // height differ a lot (narrow but tall). A symmetric pad based on
+      // the larger dimension can easily reach past a narrow unit's own
+      // width into a neighboring unit's shape on tightly-packed floors.
+      const padX = Math.max(tb.width, 4) * 0.6;
+      const padY = Math.max(tb.height, 4) * 0.6;
+      return cx >= s.bbox.x - padX && cx <= s.bbox.x + s.bbox.width + padX &&
+             cy >= s.bbox.y - padY && cy <= s.bbox.y + s.bbox.height + padY;
+    });
+
+    const bundle = { textEl: t, unitStr, outline: null, unit: null, hit: null };
+    containing.forEach(s=>{
+      if(s.role === 'hit' && !bundle.hit){ bundle.hit = s.el; used.add(s.el); }
+      else if(s.role === 'outline' && !bundle.outline){ bundle.outline = s.el; used.add(s.el); }
+      else if(s.role === 'unit' && !bundle.unit){ bundle.unit = s.el; used.add(s.el); }
+    });
+    containing.forEach(s=>{
+      if(used.has(s.el)) return;
+      if(!bundle.outline){ bundle.outline = s.el; used.add(s.el); }
+      else if(!bundle.unit){ bundle.unit = s.el; used.add(s.el); }
+      else if(!bundle.hit){ bundle.hit = s.el; used.add(s.el); }
+    });
+    bundles.push(bundle);
+  });
+  return bundles;
+}
+
+function renderUnitTable(layer){
+  const bundles = getUnitsInLayer(layer);
+  const body = $('#unitTableBody');
+  body.innerHTML = '';
+  bundles.forEach(b=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(b.unitStr)}</td><td>${b.outline?'✓':'—'}</td><td>${b.unit?'✓':'—'}</td><td>${b.hit?'✓':'—'}</td>`;
+    body.appendChild(tr);
+  });
+  $('#tbUnits').textContent = bundles.length;
+  if(!bundles.length){
+    body.innerHTML = '<tr><td colspan="4" style="color:var(--off);padding:8px 5px;">No text labels detected in this layer.</td></tr>';
+  }
+}
+
+/* Build a full index of bundles across all tagged layers, for search */
+function findBundle(unitStr, bId, fId){
+  const clean = (unitStr||'').trim();
+  let candidateLayers = state.layers.filter(l => !l.skipRender);
+  if(bId || fId){
+    const withMatch = candidateLayers.filter(l => l.tagged &&
+      (!bId || l.building===String(bId) || l.friendlyBuilding===String(bId)) &&
+      (!fId || l.floor===String(fId) || l.friendlyFloor===String(fId))
+    );
+    if(withMatch.length) candidateLayers = withMatch;
+  }
+  for(const layer of candidateLayers){
+    const bundles = getUnitsInLayer(layer);
+    const hit = bundles.find(b=>b.unitStr === clean);
+    if(hit) return { layer, bundle: hit };
+  }
+  return null;
+}
+
+/* ---------------- Rename / centering engine ---------------- */
+function setUnitText(textEl, newContent){
+  let before; try{ before = textEl.getBBox(); }catch(e){ before = null; }
+  const cx0 = before ? before.x + before.width/2 : null;
+  const cy0 = before ? before.y + before.height/2 : null;
+  // handle simple single-line text content (tspans left as-is if present, otherwise set textContent)
+  if(textEl.childElementCount === 0){
+    textEl.textContent = newContent;
+  } else {
+    // multiple tspans: replace the first tspan's text, leave rest
+    const firstTspan = textEl.querySelector('tspan');
+    if(firstTspan) firstTspan.textContent = newContent; else textEl.textContent = newContent;
+  }
+  if(before){
+    let after; try{ after = textEl.getBBox(); }catch(e){ after=null; }
+    if(after){
+      const cx1 = after.x + after.width/2, cy1 = after.y + after.height/2;
+      const dx = cx0 - cx1, dy = cy0 - cy1;
+      if(Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) applyCenteringOffset(textEl, dx, dy);
+    }
+  }
+}
+
+/* Illustrator text elements are positioned with their OWN transform attribute
+   (e.g. transform="translate(937.2 1102.64)"), which is the label's actual location
+   on the plan — not just an editing artifact. Overwriting that attribute to apply a
+   small re-centering correction destroys the label's real position (it jumps to
+   wherever the tiny correction offset happens to be, which looks like it vanished).
+   Instead, wrap the text in a dedicated <g> and put the correction there, so the
+   text element's own transform is never touched. */
+function applyCenteringOffset(textEl, dx, dy){
+  let wrapper = textEl.parentNode;
+  const isOwnWrapper = wrapper && wrapper.classList && wrapper.classList.contains('uf-center-wrap') && wrapper.childElementCount === 1;
+  if(!isOwnWrapper){
+    wrapper = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    wrapper.classList.add('uf-center-wrap');
+    textEl.parentNode.insertBefore(wrapper, textEl);
+    wrapper.appendChild(textEl);
+  }
+  const prevDx = parseFloat(wrapper.getAttribute('data-uf-dx')||'0');
+  const prevDy = parseFloat(wrapper.getAttribute('data-uf-dy')||'0');
+  const totalDx = prevDx + dx, totalDy = prevDy + dy;
+  wrapper.setAttribute('data-uf-dx', totalDx);
+  wrapper.setAttribute('data-uf-dy', totalDy);
+  wrapper.setAttribute('transform', `translate(${totalDx} ${totalDy})`);
+}
+
+/* Moves a text element so its center aligns with a target shape's center —
+   used after Split to position each new unit's label on its own piece.
+   Reuses the same wrapper-transform mechanism as applyCenteringOffset, so
+   the text element's own position/transform attribute is never touched. */
+function moveTextToCenterOfShape(textEl, targetShape){
+  const tb = getAdjustedBBox(textEl);
+  const sb = getAdjustedBBox(targetShape);
+  if(!tb || !sb) return;
+  const dx = (sb.x + sb.width/2) - (tb.x + tb.width/2);
+  const dy = (sb.y + sb.height/2) - (tb.y + tb.height/2);
+  if(Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) applyCenteringOffset(textEl, dx, dy);
+}
+
+/* ---------------- Split ----------------
+   Splits one existing unit into 2-3 new units: divides the target shape's
+   bounding box into N equal-sized rectangular sections along the given
+   direction, then boolean-intersects the shape with each rectangle to get
+   that piece — the same "equal rectangular sections" approach as the
+   original Illustrator script, just implemented with polygon-clipping
+   instead of Illustrator's Pathfinder. A small buffer is added to each
+   rectangle so results overlap the true shape boundary cleanly, with the
+   two outer edges of the whole span extended further to fully cover the
+   original shape's true extent. */
+function splitUnit(targetUnitNumber, newUnitNumbers, direction, bId, fId){
+  if(!newUnitNumbers || newUnitNumbers.length < 2) return { ok:false, error:'Provide at least 2 new unit numbers to split into.' };
+  const found = findBundle(targetUnitNumber, bId, fId);
+  if(!found) return { ok:false, error:'Could not find unit: ' + targetUnitNumber };
+
+  const n = newUnitNumbers.length;
+  const oldUnitStr = found.bundle.unitStr;
+
+  function splitShapeType(key){
+    const shape = found.bundle[key];
+    if(!shape) return { results: new Array(n).fill(null), skipped:false };
+
+    const bbox = getAdjustedBBox(shape);
+    if(!bbox) return { results: new Array(n).fill(null), skipped:true, reason:'Could not read bbox for ' + key };
+
+    const shapeRing = rootPointsToClippingPolygon(shapeToRootSpacePoints(shape));
+    if(!shapeRing) return { results: new Array(n).fill(null), skipped:true, reason:'Could not read shape geometry for ' + key };
+
+    const buf = Math.max(bbox.width, bbox.height) * 0.05 + 5;
+    const rects = [];
+    if(direction === 'vertical'){
+      const partW = bbox.width / n;
+      for(let i=0;i<n;i++){
+        rects.push({
+          left: bbox.x + partW*i - (i===0 ? buf : 0),
+          right: bbox.x + partW*(i+1) + (i===n-1 ? buf : 0),
+          top: bbox.y - buf,
+          bottom: bbox.y + bbox.height + buf
+        });
+      }
+    } else {
+      const partH = bbox.height / n;
+      for(let i=0;i<n;i++){
+        rects.push({
+          left: bbox.x - buf,
+          right: bbox.x + bbox.width + buf,
+          top: bbox.y + partH*i - (i===0 ? buf : 0),
+          bottom: bbox.y + partH*(i+1) + (i===n-1 ? buf : 0)
+        });
+      }
+    }
+
+    const parent = shape.parentNode;
+    const results = rects.map(r=>{
+      const rectRing = [[[r.left,r.top],[r.right,r.top],[r.right,r.bottom],[r.left,r.bottom],[r.left,r.top]]];
+      let intersection;
+      try{ intersection = polygonClipping.intersection(shapeRing, rectRing); }
+      catch(e){ return null; }
+      const pointsStr = clippingResultToLocalPointsString(intersection, parent);
+      if(!pointsStr) return null;
+      return createPolygonLike(shape, parent, pointsStr);
+    });
+
+    shape.remove();
+    return { results, skipped:false };
+  }
+
+  const outlineRes = splitShapeType('outline');
+  const unitRes = splitShapeType('unit');
+  const hitRes = splitShapeType('hit');
+  const warnings = [outlineRes, unitRes, hitRes].filter(r=>r.skipped).map(r=>r.reason);
+
+  const origText = found.bundle.textEl;
+  const textEls = [];
+  for(let i=0;i<n;i++){
+    let tEl;
+    if(i === 0){
+      tEl = origText;
+    } else {
+      tEl = origText.cloneNode(true);
+      origText.parentNode.appendChild(tEl);
+    }
+    setUnitText(tEl, newUnitNumbers[i]);
+    textEls.push(tEl);
+  }
+
+  for(let i=0;i<n;i++){
+    const targetShape = outlineRes.results[i] || unitRes.results[i];
+    if(targetShape) moveTextToCenterOfShape(textEls[i], targetShape);
+  }
+
+  for(let i=0;i<n;i++){
+    relabelShapeToNewUnit(outlineRes.results[i], newUnitNumbers[i]);
+    relabelShapeToNewUnit(unitRes.results[i], newUnitNumbers[i]);
+    relabelShapeToNewUnit(hitRes.results[i], newUnitNumbers[i]);
+  }
+
+  return { ok:true, warnings, outlines: outlineRes.results, units: unitRes.results, hits: hitRes.results, textEls };
+}
+
+function findUnitIdForNumber(unitNumber){
+  const row = state.unitRefRows.find(r => r.unitNumber === String(unitNumber).trim());
+  return row ? row.unitId : null;
+}
+
+function relabelShape(shapeEl, oldUnit, newUnit){
+  if(!shapeEl) return;
+  if(shapeEl.hasAttribute('data-unit')){
+    shapeEl.setAttribute('data-unit', newUnit);
+  }
+
+  const oldId = findUnitIdForNumber(oldUnit);
+  const newId = findUnitIdForNumber(newUnit);
+
+  ['id','class','data-name'].forEach(attr=>{
+    let v = shapeEl.getAttribute(attr);
+    if(!v) return;
+    let changed = false;
+
+    // Preferred: this file tags shapes with the internal database Unit ID (e.g.
+    // "id:12375945,type:Unit" or "id:hit12375945,type:HitArea,target:{id:12375945,...}"),
+    // not the visible Unit Number shown on the label — so translate via the reference
+    // CSV and swap the ID itself. "id:" is followed by a boundary character, but "hit"
+    // runs directly into its digits with no boundary, so each needs its own pattern
+    // (negative lookahead for "not another digit" avoids the same issue \b has with
+    // a trailing underscore, as seen elsewhere in this file).
+    if(oldId && newId){
+      const rxPlain = new RegExp('id:' + escapeRegex(oldId) + '(?!\\d)', 'g');
+      const rxHit = new RegExp('hit' + escapeRegex(oldId) + '(?!\\d)', 'g');
+      if(rxPlain.test(v)){ v = v.replace(rxPlain, 'id:'+newId); changed = true; }
+      if(rxHit.test(v)){ v = v.replace(rxHit, 'hit'+newId); changed = true; }
+    }
+
+    // Fallback: some files tag shapes directly with the visible unit number instead
+    // of a separate internal ID (e.g. this app's own sample file) — try that too.
+    // Anchored to the start and requiring "not followed by another digit" rather
+    // than a true word boundary, since Illustrator's SVG export appends a long
+    // persistent UID suffix starting with an underscore to any named object
+    // (e.g. "1109_00000115485380862546477440000011092918600329721744_") — and
+    // underscore counts as a word character, so \b would never match there at all.
+    if(!changed){
+      const rx = new RegExp('^' + escapeRegex(oldUnit) + '(?!\\d)');
+      if(rx.test(v)) v = v.replace(rx, newUnit);
+    }
+
+    shapeEl.setAttribute(attr, v);
+  });
+}
+function escapeRegex(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+/* Used by Combine/Split instead of relabelShape's old->new translation,
+   since the "old" unit number involved might not exist in the CSV at all
+   — e.g. a unit that was itself created by an earlier Combine/Split has an
+   invented number like "604950" that was never a real CSV row, so looking
+   it up returns nothing to translate FROM. This sidesteps that entirely by
+   reading whatever numeric ID is CURRENTLY on the shape and replacing that
+   directly — works regardless of whether the shape's current identity
+   traces back to an original CSV unit or an earlier combine/split result. */
+function relabelShapeToNewUnit(shapeEl, newUnit){
+  if(!shapeEl) return;
+  if(shapeEl.hasAttribute('data-unit')) shapeEl.setAttribute('data-unit', newUnit);
+
+  const newId = findUnitIdForNumber(newUnit);
+
+  ['id','class','data-name'].forEach(attr=>{
+    let v = shapeEl.getAttribute(attr);
+    if(!v) return;
+    let changed = false;
+
+    if(newId){
+      const currentIdMatch = v.match(/id:(\d+)/);
+      const currentHitMatch = v.match(/hit(\d+)/);
+      if(currentIdMatch){
+        v = v.replace(new RegExp('id:' + escapeRegex(currentIdMatch[1]) + '(?!\\d)', 'g'), 'id:'+newId);
+        changed = true;
+      }
+      if(currentHitMatch){
+        v = v.replace(new RegExp('hit' + escapeRegex(currentHitMatch[1]) + '(?!\\d)', 'g'), 'hit'+newId);
+        changed = true;
+      }
+    }
+
+    // Fallback: no internal database ID pattern at all on this shape (some
+    // files tag shapes directly with the plain visible unit number) —
+    // nothing reliable to extract, so just set it directly to the new
+    // number, as long as the current value actually looks like a bare
+    // unit-number-style id rather than some other structural name.
+    if(!changed && /^[A-Za-z0-9_-]+$/.test(v)){
+      v = newUnit;
+      changed = true;
+    }
+
+    if(changed) shapeEl.setAttribute(attr, v);
+  });
+}
+
+function renameBundleInPlace(found, newUnit){
+  const { bundle } = found;
+  const oldUnit = bundle.unitStr;
+  setUnitText(bundle.textEl, newUnit);
+  relabelShape(bundle.outline, oldUnit, newUnit);
+  relabelShape(bundle.unit, oldUnit, newUnit);
+  relabelShape(bundle.hit, oldUnit, newUnit);
+  bundle.unitStr = newUnit;
+}
+
+function moveBundleToLayer(found, destLayer){
+  const { bundle } = found;
+  [bundle.textEl, bundle.outline, bundle.unit, bundle.hit].forEach(el=>{
+    if(el) destLayer.el.appendChild(el);
+  });
+}
+
+/* ---------------- Combine ----------------
+   Merges 2-3 existing units into one: boolean-unions each shape type
+   (outline/unit/hit) across all selected units, keeps the FIRST unit's text
+   label (renamed to the new unit number) and removes the others, then
+   relabels the merged shapes via the normal rename path (relabelShape) so
+   CSV-based internal IDs update exactly the same way an ordinary rename
+   would. Returns { ok, error? } — never throws; any single missing piece
+   (e.g. no hit-area shape for one of the units) is skipped gracefully
+   rather than failing the whole operation. */
+function combineUnits(unitNumbers, newUnitNumber, bId, fId){
+  if(!unitNumbers || unitNumbers.length < 2) return { ok:false, error:'Select at least 2 units to combine.' };
+
+  const founds = unitNumbers.map(u => findBundle(u, bId, fId));
+  const missing = unitNumbers.filter((u,i) => !founds[i]);
+  if(missing.length) return { ok:false, error:'Could not find unit(s): ' + missing.join(', ') };
+
+  function combineShapeType(key){
+    const shapes = founds.map(f => f.bundle[key]).filter(Boolean);
+    if(shapes.length === 0) return { result:null, skipped:false };
+    if(shapes.length === 1) return { result:shapes[0], skipped:false };
+
+    const rings = shapes.map(s => rootPointsToClippingPolygon(shapeToRootSpacePoints(s)));
+    if(rings.some(r => !r)) return { result:null, skipped:true, reason:'Could not read shape geometry for ' + key };
+
+    let unionResult;
+    try{ unionResult = polygonClipping.union(...rings); }
+    catch(e){ return { result:null, skipped:true, reason:'Boolean union failed for ' + key + ': ' + e.message }; }
+
+    const parent = shapes[0].parentNode;
+    const pointsStr = clippingResultToLocalPointsString(unionResult, parent);
+    if(!pointsStr) return { result:null, skipped:true, reason:'Union produced no usable shape for ' + key };
+
+    const merged = createPolygonLike(shapes[0], parent, pointsStr);
+    shapes.forEach(s => s.remove());
+    return { result: merged, skipped:false };
+  }
+
+  const outlineRes = combineShapeType('outline');
+  const unitRes = combineShapeType('unit');
+  const hitRes = combineShapeType('hit');
+  const warnings = [outlineRes, unitRes, hitRes].filter(r => r.skipped).map(r => r.reason);
+
+  const keepBundle = founds[0].bundle;
+  const oldUnitOfKeptText = keepBundle.unitStr;
+  setUnitText(keepBundle.textEl, newUnitNumber);
+  for(let i=1; i<founds.length; i++){
+    if(founds[i].bundle.textEl) founds[i].bundle.textEl.remove();
+  }
+
+  const targetShapeForCentering = outlineRes.result || unitRes.result || hitRes.result;
+  if(targetShapeForCentering) moveTextToCenterOfShape(keepBundle.textEl, targetShapeForCentering);
+
+  relabelShapeToNewUnit(outlineRes.result, newUnitNumber);
+  relabelShapeToNewUnit(unitRes.result, newUnitNumber);
+  relabelShapeToNewUnit(hitRes.result, newUnitNumber);
+
+  return {
+    ok: true,
+    warnings,
+    outline: outlineRes.result,
+    unit: unitRes.result,
+    hit: hitRes.result,
+    textEl: keepBundle.textEl
+  };
+}
+
+/* Core task runner used by Manual + CSV Bulk.
+   IMPORTANT: resolution (finding each task's target unit) happens for every task
+   BEFORE any text is changed. Previously, a rename could shift a later task's search
+   out from under it — for example a batch with 1306->1308 and 1308->1311 in the same
+   run: after the first rename, "1308" now refers to two different physical units, and
+   whichever the second task's search found could end up being renamed twice while the
+   original 1308 unit was left blank. Resolving all bundles up front against the
+   untouched document avoids this regardless of how many rows overlap or form a cycle. */
+function runTaskBatch(tasks, label){
+  if(!state.svgEl){ toast('Load an SVG first'); return; }
+  if(!tasks.length){ toast('Nothing to run — fill in a row first'); return; }
+  pushHistory();
+
+  const resolved = tasks.map(task => ({ task, found: findBundle(task.oldU, task.sB, task.sF) }));
+  const errors = [];
+  resolved.forEach(r=>{
+    if(!r.found) errors.push(`'${r.task.oldU}' not found in Bldg ${r.task.sB||'?'} / Floor ${r.task.sF||'?'}`);
+  });
+
+  let ok = 0;
+  resolved.forEach(r=>{
+    if(!r.found) return;
+    const { task, found } = r;
+    const moving = (task.dB && task.dF) && (task.dB !== task.sB || task.dF !== task.sF);
+    renameBundleInPlace(found, task.newU);
+    if(moving){
+      const destLayer = state.layers.find(l=> l.tagged &&
+        (l.building===String(task.dB) || l.friendlyBuilding===String(task.dB)) &&
+        (l.floor===String(task.dF) || l.friendlyFloor===String(task.dF))
+      );
+      if(destLayer) moveBundleToLayer(found, destLayer);
+      else errors.push(`Destination Bldg ${task.dB} / Floor ${task.dF} not tagged — renamed but not moved.`);
+    }
+    ok++;
+  });
+
+  if(state.selectedLayerIdx!==null) renderUnitTable(state.layers[state.selectedLayerIdx]);
+  log(ok>0?'ok':'err', `${label}: ${ok}/${tasks.length} succeeded.`);
+  errors.forEach(e=> log('err', escapeHtml(e)));
+  toast(`${label} complete — ${ok}/${tasks.length} succeeded`);
+}
+
+/* ---------------- CSV Bulk ---------------- */
+$('#csvDrop').addEventListener('click', ()=> $('#fileCsv').click());
+$('#csvDrop').addEventListener('dragover', e=>{ e.preventDefault(); $('#csvDrop').classList.add('drag'); });
+$('#csvDrop').addEventListener('dragleave', ()=> $('#csvDrop').classList.remove('drag'));
+$('#csvDrop').addEventListener('drop', e=>{
+  e.preventDefault(); $('#csvDrop').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if(f) loadCsvFile(f);
+});
+$('#fileCsv').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadCsvFile(f); });
+
+function loadCsvFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const rows = parseMappingCsv(reader.result);
+      if(!rows.length){ toast('No valid rows found in that CSV'); return; }
+      state.csvRows = rows;
+      renderCsvPreview(rows);
+      log('ok', `Loaded CSV <b>${escapeHtml(file.name)}</b> — ${rows.length} rows.`);
+    }catch(err){
+      toast('CSV error: ' + err.message);
+      log('err', 'CSV parse failed — ' + escapeHtml(err.message));
+    }
+  };
+  reader.readAsText(file);
+}
+
+function splitCsvLine(line){
+  return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c=>c.replace(/^"|"$/g,'').trim());
+}
+
+function parseMappingCsv(text){
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const lines = text.split('\n').filter(l=>l.trim().length);
+  if(lines.length < 2) return [];
+  const headers = splitCsvLine(lines[0]).map(h=>h.toLowerCase());
+  let oldIdx=-1,newIdx=-1,bIdx=-1,fIdx=-1,uidIdx=-1;
+  headers.forEach((h,i)=>{
+    if(oldIdx===-1 && (h==='old'||h.indexOf('old unit')!==-1||h.indexOf('old number')!==-1||h==='unit number')) oldIdx=i;
+    if(newIdx===-1 && (h==='new'||h.indexOf('new unit')!==-1||h.indexOf('new number')!==-1)) newIdx=i;
+    if(uidIdx===-1 && h.indexOf('unit id')!==-1) uidIdx=i;
+    if(bIdx===-1 && (h.indexOf('bldg')!==-1||h.indexOf('building')!==-1)) bIdx=i;
+    if(fIdx===-1 && h.indexOf('floor')!==-1) fIdx=i;
+  });
+  if(oldIdx===-1 || newIdx===-1 || bIdx===-1){
+    throw new Error("Couldn't find Old Unit / New Unit / Building columns.");
+  }
+  const out = [];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim()) continue;
+    const c = splitCsvLine(lines[i]);
+    const row = {
+      oldU: (c[oldIdx]||'').replace(/\.0$/,''),
+      newU: (c[newIdx]||'').replace(/\.0$/,''),
+      b: c[bIdx]||'',
+      f: fIdx!==-1 ? (c[fIdx]||'') : '',
+      uid: uidIdx!==-1 ? (c[uidIdx]||'') : ''
+    };
+    if(row.oldU && row.newU && row.b) out.push(row);
+  }
+  return out;
+}
+
+function renderCsvPreview(rows){
+  $('#csvSummary').style.display = 'block';
+  const body = $('#csvPreviewTable tbody');
+  body.innerHTML = '';
+  rows.slice(0,200).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(r.oldU)}</td><td>${escapeHtml(r.newU)}</td><td>${escapeHtml(r.b)}</td><td>${escapeHtml(r.f)}</td><td>${escapeHtml(r.uid)}</td>`;
+    body.appendChild(tr);
+  });
+}
+$('#btnApplyCsv').addEventListener('click', ()=>{
+  if(state.unitRefRows.length === 0){
+    const proceed = confirm(
+      'No reference CSV is loaded.\n\n' +
+      'Without it, the visible unit labels will update correctly, but the underlying ' +
+      'hit-area and unit shape IDs will NOT be updated to match.\n\n' +
+      'Click Cancel to stop and load your reference CSV first (Layers tab), ' +
+      'or OK to continue anyway with labels only.'
+    );
+    if(!proceed){ log('info', 'CSV Bulk update cancelled — no reference CSV loaded yet.'); return; }
+    log('info', 'Proceeding with CSV Bulk update without a reference CSV loaded — only visible labels will update, not the underlying hit/unit shape IDs.');
+  }
+  const tasks = state.csvRows.map(r=>({ oldU:r.oldU, newU:r.newU, sB:r.b, sF:r.f, dB:r.b, dF:r.f }));
+  runTaskBatch(tasks, 'CSV Bulk Update');
+});
+$('#btnClearCsv').addEventListener('click', ()=>{
+  state.csvRows = [];
+  $('#csvSummary').style.display = 'none';
+  $('#fileCsv').value = '';
+});
+
+/* ---------------- Flip ---------------- */
+$$('.radio-card').forEach(card=>{
+  card.addEventListener('click', ()=>{
+    const groupName = card.querySelector('input').name;
+    $$('.radio-card').forEach(c=>{
+      if(c.querySelector('input').name === groupName) c.classList.remove('active');
+    });
+    card.classList.add('active');
+    card.querySelector('input').checked = true;
+  });
+});
+
+$('#btnSelectAllFloor').addEventListener('click', ()=>{
+  if(state.selectedLayerIdx===null){ toast('Select a floor in the Layers tab first'); return; }
+  const layer = state.layers[state.selectedLayerIdx];
+  if(layer.skipRender){ toast('This layer is hidden — pick a real floor layer first'); return; }
+  const bundles = getUnitsInLayer(layer);
+  if(!bundles.length){ toast('No units found on this floor'); return; }
+  bundles.forEach(b=>{
+    if(!state.selection.has(b.textEl)){
+      state.selection.add(b.textEl);
+      b.textEl.classList.add('uf-selected');
+    }
+  });
+  updateSelCount();
+  toast(`Selected ${bundles.length} unit(s) on this floor`);
+  log('info', `Selected all ${bundles.length} unit(s) on ${escapeHtml(layerLabel(layer))}.`);
+});
+function setSelectMode(on){
+  state.selectMode = on;
+  const wrap = $('#canvas-wrap');
+  wrap.classList.toggle('selecting', state.selectMode);
+  $('#modebar').style.display = state.selectMode ? 'flex' : 'none';
+  const label = state.selectMode ? 'Stop Selecting' : 'Start Selecting Units';
+  $('#btnSelectMode').textContent = label;
+  if($('#btnSelectModeCombine')) $('#btnSelectModeCombine').textContent = label;
+}
+$('#btnSelectMode').addEventListener('click', ()=>{ setSelectMode(!state.selectMode); });
+$('#btnSelectModeCombine').addEventListener('click', ()=>{ setSelectMode(!state.selectMode); });
+$('#btnStopSelect').addEventListener('click', ()=>{ setSelectMode(false); });
+
+function clearSelection(){
+  state.selection.forEach(el=> el.classList.remove('uf-selected'));
+  state.selection.clear();
+  updateSelCount();
+}
+function updateSelCount(){
+  $('#selCountText').textContent = `${state.selection.size} selected`;
+  if($('#selCountTextCombine')) $('#selCountTextCombine').textContent = `${state.selection.size} selected`;
+  $('#tbSelection').textContent = state.selection.size ? `${state.selection.size} unit(s) selected` : $('#tbSelection').textContent;
+}
+
+function findLayerForEl(el){
+  let n = el;
+  while(n && n !== state.svgEl){
+    if(n.hasAttribute && n.hasAttribute('data-uf-layer')){
+      const idx = parseInt(n.getAttribute('data-uf-layer'),10);
+      return state.layers[idx];
+    }
+    n = n.parentNode;
+  }
+  return null;
+}
+
+function findTextTarget(el){
+  let n = el;
+  while(n && n !== state.svgEl){
+    if(n.tagName === 'text') return n;
+    n = n.parentNode;
+  }
+  return null;
+}
+
+/* Given any element clicked on the canvas, find which unit bundle (and layer/tag) it belongs to,
+   whether the click landed on the text label itself or one of its linked shapes. */
+function findBundleForElement(el){
+  const layer = findLayerForEl(el);
+  if(!layer || layer.skipRender) return null;
+  const bundles = getUnitsInLayer(layer);
+  let node = el;
+  while(node && node !== layer.el && node !== state.svgEl){
+    const hit = bundles.find(b => b.textEl===node || b.outline===node || b.unit===node || b.hit===node);
+    if(hit) return { layer, bundle: hit };
+    node = node.parentNode;
+  }
+  return null;
+}
+
+function flashElement(el){
+  if(!el) return;
+  el.classList.add('uf-hover');
+  setTimeout(()=> el.classList.remove('uf-hover'), 900);
+}
+
+$('#btnRunFlip').addEventListener('click', executeFlip);
+
+function executeFlip(){
+  if(state.selection.size < 2){ toast('Select at least 2 unit labels first'); return; }
+  if(state.unitRefRows.length === 0){
+    const proceed = confirm(
+      'No reference CSV is loaded.\n\n' +
+      'Without it, the visible unit labels will swap correctly, but the underlying ' +
+      'hit-area and unit shape IDs will NOT be updated to match — they will stay ' +
+      'pointing at the wrong units.\n\n' +
+      'Click Cancel to stop and load your reference CSV first (Layers tab), ' +
+      'or OK to continue anyway with labels only.'
+    );
+    if(!proceed){
+      log('info', 'Flip cancelled — no reference CSV loaded yet.');
+      return;
+    }
+    log('info', 'Proceeding with flip without a reference CSV loaded — only visible labels will update, not the underlying hit/unit shape IDs.');
+  }
+  const mode = document.querySelector('input[name=flipmode]:checked').value;
+  const group = Array.from(state.selection).map(textEl=>{
+    const bb = getAdjustedBBox(textEl) || {x:0,y:0,width:0,height:0};
+    return { textEl, unitStr: (textEl.textContent||'').trim(), cx: bb.x + bb.width/2, cy: bb.y + bb.height/2 };
+  });
+  log('info', `Flip debug — selection has ${group.length} unit(s): ` + group.map(g=>`${g.unitStr}(${g.cx.toFixed(1)},${g.cy.toFixed(1)})`).join(', '));
+
+  pushHistory();
+  let swapCount = 0;
+
+  const heights = group.map(i=>{ const b = getAdjustedBBox(i.textEl); return b ? b.height : 10; });
+  const tol = Math.max(6, (heights.reduce((a,b)=>a+b,0)/heights.length) * 1.6);
+
+  let pairs = [];
+  if(mode === 'HORZ'){
+    const rows = clusterBy(group, 'cy', tol);
+    rows.forEach(row=>{
+      row.sort((a,b)=>a.cx-b.cx);
+      for(let i=0;i<Math.floor(row.length/2);i++) pairs.push([row[i], row[row.length-1-i]]);
+    });
+  } else if(mode === 'VERT'){
+    const cols = clusterBy(group, 'cx', tol);
+    cols.forEach(col=>{
+      col.sort((a,b)=>a.cy-b.cy);
+      for(let i=0;i<Math.floor(col.length/2);i++) pairs.push([col[i], col[col.length-1-i]]);
+    });
+  } else {
+    // Diagonal (X pattern): flatten the selection into reading order — top row to
+    // bottom row, left to right within each row — then reverse that whole order and
+    // pair position i with position N-1-i. For a standard grid this is exactly a
+    // 180° point-reflection through the center, but unlike matching by raw distance
+    // to a mirrored point, it only depends on relative row/column ordering — so it
+    // stays correct even when building spacing is uneven or slightly irregular.
+    const rows = clusterBy(group, 'cy', tol); // already ordered top row first
+    log('info', `Flip debug — diagonal mode found ${rows.length} row cluster(s): ${rows.map(r=>'['+r.map(u=>u.unitStr).join(',')+']').join(' ')} (tolerance=${tol.toFixed(1)})`);
+    const flat = [];
+    rows.forEach(row=>{ row.sort((a,b)=>a.cx-b.cx); flat.push(...row); });
+    for(let i=0;i<Math.floor(flat.length/2);i++) pairs.push([flat[i], flat[flat.length-1-i]]);
+  }
+
+  pairs.forEach(([a,b])=>{
+    swapTextInPlace(a.textEl, b.textEl);
+    swapCount++;
+  });
+
+  if(swapCount === 0){
+    toast('Nothing to flip — need at least 2 selected units');
+    log('err', 'Flip found no valid pairs.');
+    return;
+  }
+
+  if(state.selectedLayerIdx!==null) renderUnitTable(state.layers[state.selectedLayerIdx]);
+  toast(`Flipped ${swapCount} pair(s)`);
+  log('ok', `Flip (${mode}): swapped ${swapCount} pair(s).`);
+}
+
+/* ---------------- Combine / Split ---------------- */
+$('#btnAddSplitPiece').addEventListener('click', ()=>{
+  const container = $('#splitUnitInputs');
+  const existing = container.querySelectorAll('.splitNewUnit');
+  if(existing.length >= 3){ toast('Maximum of 3 pieces supported'); return; }
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'splitNewUnit';
+  input.placeholder = `Piece ${existing.length+1}`;
+  input.style.marginBottom = '8px';
+  container.appendChild(input);
+  if(container.querySelectorAll('.splitNewUnit').length >= 3) $('#btnAddSplitPiece').style.display = 'none';
+});
+
+function confirmNoCsvForCombineSplit(actionLabel){
+  if(state.unitRefRows.length > 0) return true;
+  const proceed = confirm(
+    'No reference CSV is loaded.\n\n' +
+    'Without it, the resulting shape(s) will keep whichever identifier the original unit(s) already had, rather than being translated to the correct database ID(s) for the new unit number(s).\n\n' +
+    'Click Cancel to load your reference CSV first (Layers tab), or OK to continue anyway.'
+  );
+  if(!proceed) log('info', `${actionLabel} cancelled — no reference CSV loaded yet.`);
+  return proceed;
+}
+
+$('#btnRunCombine').addEventListener('click', ()=>{
+  if(state.selection.size < 2 || state.selection.size > 3){
+    toast('Select 2 or 3 units to combine');
+    return;
+  }
+  const newUnit = $('#combineNewUnit').value.trim();
+  if(!newUnit){ toast('Enter a new unit number for the combined result'); return; }
+  if(!confirmNoCsvForCombineSplit('Combine')) return;
+
+  const selArr = Array.from(state.selection);
+  const layer = findLayerForEl(selArr[0]);
+  if(!layer){ toast('Could not determine the floor for the selected units'); return; }
+  const unitNumbers = selArr.map(el => (el.textContent||'').trim());
+
+  pushHistory();
+  const result = combineUnits(unitNumbers, newUnit, layer.building, layer.floor);
+  if(!result.ok){
+    toast(result.error);
+    log('err', 'Combine failed: ' + result.error);
+    return;
+  }
+  (result.warnings||[]).forEach(w => log('info', 'Combine warning: ' + w));
+
+  clearSelection();
+  $('#combineNewUnit').value = '';
+  if(state.selectedLayerIdx!==null) renderUnitTable(state.layers[state.selectedLayerIdx]);
+  toast(`Combined ${unitNumbers.length} units into "${newUnit}"`);
+  log('ok', `Combined units ${unitNumbers.join(', ')} into "${newUnit}".`);
+});
+
+$('#btnRunSplit').addEventListener('click', ()=>{
+  if(state.selection.size !== 1){ toast('Select exactly 1 unit to split'); return; }
+  const newUnits = Array.from(document.querySelectorAll('.splitNewUnit')).map(i=>i.value.trim()).filter(Boolean);
+  if(newUnits.length < 2){ toast('Enter at least 2 new unit numbers'); return; }
+  const dupes = newUnits.filter((u,i) => newUnits.indexOf(u) !== i);
+  if(dupes.length){ toast(`Each piece needs a different unit number — "${dupes[0]}" was entered more than once`); return; }
+  if(!confirmNoCsvForCombineSplit('Split')) return;
+
+  const direction = document.querySelector('input[name=splitdir]:checked').value;
+  const selArr = Array.from(state.selection);
+  const targetUnit = (selArr[0].textContent||'').trim();
+  const layer = findLayerForEl(selArr[0]);
+  if(!layer){ toast('Could not determine the floor for the selected unit'); return; }
+
+  pushHistory();
+  const result = splitUnit(targetUnit, newUnits, direction, layer.building, layer.floor);
+  if(!result.ok){
+    toast(result.error);
+    log('err', 'Split failed: ' + result.error);
+    return;
+  }
+  (result.warnings||[]).forEach(w => log('info', 'Split warning: ' + w));
+
+  clearSelection();
+  document.querySelectorAll('.splitNewUnit').forEach(i=>i.value='');
+  if(state.selectedLayerIdx!==null) renderUnitTable(state.layers[state.selectedLayerIdx]);
+  toast(`Split "${targetUnit}" into ${newUnits.length} units`);
+  log('ok', `Split unit "${targetUnit}" into ${newUnits.join(', ')}.`);
+});
+
+$('#btnRunRename').addEventListener('click', ()=>{
+  if(state.selectedLayerIdx===null){ toast('Select a floor in the Layers tab first'); return; }
+  const layer = state.layers[state.selectedLayerIdx];
+
+  const oldUnit = $('#renameOldUnit').value.trim();
+  const newUnit = $('#renameNewUnit').value.trim();
+  if(!oldUnit || !newUnit){ toast('Enter both the current and new unit numbers'); return; }
+  if(oldUnit === newUnit){ toast('New unit number is the same as the current one'); return; }
+
+  const bundles = getUnitsInLayer(layer);
+  const bundle = bundles.find(b=>b.unitStr === oldUnit);
+  if(!bundle){ toast(`Unit "${oldUnit}" not found on the selected floor`); return; }
+
+  const collision = bundles.find(b=>b.unitStr === newUnit);
+  if(collision){ toast(`Unit "${newUnit}" already exists on this floor`); return; }
+
+  if(!confirmNoCsvForCombineSplit('Rename')) return;
+
+  pushHistory();
+  renameBundleInPlace({ layer, bundle }, newUnit);
+
+  $('#renameOldUnit').value = '';
+  $('#renameNewUnit').value = '';
+  renderUnitTable(layer);
+  toast(`Renamed "${oldUnit}" to "${newUnit}"`);
+  log('ok', `Renamed unit "${oldUnit}" to "${newUnit}" on Bldg ${layer.friendlyBuilding||layer.building} / Floor ${layer.friendlyFloor||layer.floor}.`);
+});
+
+function clusterBy(group, key, tol){
+  return clusterByAxis(group, key, tol);
+}
+function clusterByAxis(group, key, tol){
+  // SVG's y-axis increases downward, so ascending cy = top-to-bottom reading order
+  const sorted = group.slice().sort((a,b)=> key==='cy' ? (a.cy-b.cy) : (a.cx-b.cx));
+  const clusters = [];
+  let current = [sorted[0]];
+  for(let i=1;i<sorted.length;i++){
+    if(Math.abs(sorted[i][key]-current[0][key]) < tol) current.push(sorted[i]);
+    else { clusters.push(current); current = [sorted[i]]; }
+  }
+  clusters.push(current);
+  return clusters;
+}
+
+function swapTextInPlace(textElA, textElB){
+  const a = textElA.textContent, b = textElB.textContent;
+  setUnitText(textElA, b);
+  setUnitText(textElB, a);
+  // also swap any linked shape tagging within their respective layers
+  const layerA = findLayerForEl(textElA), layerB = findLayerForEl(textElB);
+  if(layerA){
+    const bundles = getUnitsInLayer(layerA);
+    const bundle = bundles.find(x=>x.textEl===textElA);
+    if(bundle){ relabelShape(bundle.outline, a, b); relabelShape(bundle.unit, a, b); relabelShape(bundle.hit, a, b); }
+  }
+  if(layerB){
+    const bundles = getUnitsInLayer(layerB);
+    const bundle = bundles.find(x=>x.textEl===textElB);
+    if(bundle){ relabelShape(bundle.outline, b, a); relabelShape(bundle.unit, b, a); relabelShape(bundle.hit, b, a); }
+  }
+}
+
+/* ---------------- Canvas: selection clicks, pan & zoom ---------------- */
+const wrapEl = $('#canvas-wrap');
+const stageEl = $('#stage');
+
+wrapEl.addEventListener('click', e=>{
+  if(state.dragDistance > 6){ state.dragDistance = 0; return; } // ignore click that ends a pan drag
+  state.dragDistance = 0;
+  if(!state.svgEl) return;
+  const target = e.target;
+
+  if(state.selectMode){
+    const textEl = findTextTarget(target) || (target.tagName==='text' ? target : null);
+    if(!textEl) return;
+    if(state.selection.has(textEl)){
+      state.selection.delete(textEl);
+      textEl.classList.remove('uf-selected');
+    } else {
+      state.selection.add(textEl);
+      textEl.classList.add('uf-selected');
+    }
+    updateSelCount();
+    return;
+  }
+
+  // Not in select mode: clicking a unit shows which building/floor it belongs to.
+  const found = findBundleForElement(target);
+  if(!found) return;
+  const { layer, bundle } = found;
+  const where = layerLabel(layer);
+  flashElement(bundle.textEl);
+  flashElement(bundle.outline);
+  toast(`Unit ${bundle.unitStr} — ${where}`);
+  log('info', `Clicked unit <b>${escapeHtml(bundle.unitStr)}</b> — ${escapeHtml(where)}.`);
+  $('#tbSelection').textContent = `Unit ${bundle.unitStr} — ${where}`;
+});
+
+wrapEl.addEventListener('mousedown', e=>{
+  if(state.selectMode) return;
+  if(!state.svgEl) return;
+  state.panning = true;
+  state.dragDistance = 0;
+  state.panStart = { x: e.clientX, y: e.clientY, vx: state.view.x, vy: state.view.y };
+  wrapEl.classList.add('panning');
+});
+window.addEventListener('mousemove', e=>{
+  if(!state.panning) return;
+  const dx = e.clientX - state.panStart.x, dy = e.clientY - state.panStart.y;
+  state.dragDistance = Math.max(state.dragDistance||0, Math.abs(dx), Math.abs(dy));
+  state.view.x = state.panStart.vx + dx;
+  state.view.y = state.panStart.vy + dy;
+  applyView();
+});
+window.addEventListener('mouseup', ()=>{ state.panning=false; wrapEl.classList.remove('panning'); });
+
+wrapEl.addEventListener('wheel', e=>{
+  if(!state.svgEl) return;
+  e.preventDefault();
+  const rect = wrapEl.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  zoomAt(mx, my, factor);
+}, { passive:false });
+
+function zoomAt(mx, my, factor){
+  const old = state.view.scale;
+  let next = old * factor;
+  next = Math.min(20, Math.max(0.02, next));
+  const wx = (mx - state.view.x) / old, wy = (my - state.view.y) / old;
+  state.view.x = mx - wx*next;
+  state.view.y = my - wy*next;
+  state.view.scale = next;
+  applyView();
+}
+function applyView(){
+  stageEl.style.transform = `translate(${state.view.x}px, ${state.view.y}px) scale(${state.view.scale})`;
+  $('#zoomLabel').textContent = Math.round(state.view.scale*100) + '%';
+}
+$('#zoomIn').addEventListener('click', ()=>{ const r=wrapEl.getBoundingClientRect(); zoomAt(r.width/2, r.height/2, 1.25); });
+$('#zoomOut').addEventListener('click', ()=>{ const r=wrapEl.getBoundingClientRect(); zoomAt(r.width/2, r.height/2, 0.8); });
+$('#zoomFit').addEventListener('click', ()=>{
+  if(state.selectedLayerIdx!==null){
+    const layer = state.layers[state.selectedLayerIdx];
+    if(layer && !layer.skipRender){ fitToLayer(layer); return; }
+  }
+  fitToView();
+});
+
+function fitToBBox(bbox){
+  const rect = wrapEl.getBoundingClientRect();
+  let w = bbox ? bbox.width : rect.width;
+  let h = bbox ? bbox.height : rect.height;
+  if(!w || !h){ w = rect.width; h = rect.height; }
+  const scale = Math.min(rect.width/w, rect.height/h) * 0.92;
+  const offX = bbox ? bbox.x : 0, offY = bbox ? bbox.y : 0;
+  state.view.scale = scale;
+  state.view.x = (rect.width - w*scale)/2 - offX*scale;
+  state.view.y = (rect.height - h*scale)/2 - offY*scale;
+  applyView();
+}
+
+function fitToView(){
+  if(!state.svgEl) return;
+  let bbox;
+  try{ bbox = state.svgEl.getBBox(); }catch(e){ bbox = null; }
+  if(!bbox){
+    const w = parseFloat(state.svgEl.getAttribute('width'));
+    const h = parseFloat(state.svgEl.getAttribute('height'));
+    bbox = (w && h) ? { x:0, y:0, width:w, height:h } : null;
+  }
+  fitToBBox(bbox);
+}
+
+function fitToLayer(layer){
+  if(!layer) return;
+  let bbox;
+  try{ bbox = layer.el.getBBox(); }catch(e){ bbox = null; }
+  if(!bbox || !bbox.width || !bbox.height){ fitToView(); return; }
+  fitToBBox(bbox);
+}
+window.addEventListener('resize', ()=>{
+  if(!state.svgEl) return;
+  if(state.selectedLayerIdx!==null){
+    const layer = state.layers[state.selectedLayerIdx];
+    if(layer && !layer.skipRender){ fitToLayer(layer); return; }
+  }
+  fitToView();
+});
+
+/* ---------------- Tabs ---------------- */
+$$('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    $$('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    $$('.panel').forEach(p=>p.classList.remove('active'));
+    $('#panel-'+tab.dataset.panel).classList.add('active');
+  });
+});
+
+/* ---------------- Log drawer collapse ---------------- */
+$('#loghead').addEventListener('click', ()=>{
+  $('#logdrawer').classList.toggle('collapsed');
+});
+
+/* ---------------- PGF snapshot warning banner ---------------- */
+$('#pgfBannerDismiss').addEventListener('click', ()=>{
+  $('#pgfBanner').style.display = 'none';
+});
+$('#pgfBannerDetails').addEventListener('click', ()=>{
+  $('#logdrawer').classList.remove('collapsed');
+  toast('Full explanation is in the Activity Log below');
+});
+
+/* ---------------- Export ---------------- */
+$('#chkKeepIllustratorLayers').addEventListener('change', e=>{
+  state.keepIllustratorLayers = e.target.checked;
+});
+$('#btnExport').addEventListener('click', ()=>{
+  // Always read from the actual live, currently-rendered SVG rather than a stored
+  // reference — guarantees export can never diverge from what's on screen.
+  const liveSvg = $('#stage svg') || state.svgEl;
+  if(!liveSvg){ toast('Nothing to export'); return; }
+  const clone = liveSvg.cloneNode(true);
+  clone.querySelectorAll('[data-uf-layer]').forEach(el=>el.removeAttribute('data-uf-layer'));
+  clone.querySelectorAll('[data-uf-dx]').forEach(el=>{ el.removeAttribute('data-uf-dx'); el.removeAttribute('data-uf-dy'); });
+  clone.querySelectorAll('.uf-center-wrap').forEach(el=>el.classList.remove('uf-center-wrap'));
+  clone.querySelectorAll('.uf-selected').forEach(el=>el.classList.remove('uf-selected'));
+  clone.querySelectorAll('.uf-perf-hidden').forEach(el=>el.classList.remove('uf-perf-hidden'));
+  clone.querySelectorAll('.uf-not-focused').forEach(el=>el.classList.remove('uf-not-focused'));
+  clone.querySelectorAll('[data-uf-fallback-large-image]').forEach(el=>el.removeAttribute('data-uf-fallback-large-image'));
+  // Restore full-resolution bytes for any images set aside before parsing — export is always lossless
+  clone.querySelectorAll('[data-uf-large-image]').forEach(el=>{
+    const refId = el.getAttribute('data-uf-large-image');
+    const rec = state.largeImageData.find(r=>r.refId===refId);
+    if(rec){
+      const dataUri = `data:image/${rec.mime};base64,${rec.b64}`;
+      if(el.hasAttribute('xlink:href')) el.setAttribute('xlink:href', dataUri);
+      if(el.hasAttribute('href')) el.setAttribute('href', dataUri);
+    }
+    el.removeAttribute('data-uf-large-image');
+  });
+  const serializer = new XMLSerializer();
+  let str = serializer.serializeToString(clone);
+
+  // The Illustrator round-trip snapshot was stripped before parsing (it's not
+  // part of the DOM at all), so restoring it — if the user opts in — has to be
+  // done as text insertion back into the serialized output, at the same spot
+  // it originally occupied. Different Illustrator export settings wrap this
+  // differently (some use a <switch> tag, some don't), so the anchor point
+  // depends on which wrapper style this specific file used.
+  if(state.keepIllustratorLayers && state.strippedPgfBlock){
+    let restored = false;
+    if(state.pgfRestoreMode === 'afterSwitchClose' && str.includes('</switch>')){
+      if(state.strippedPgfForeignObject) str = str.replace('<switch>', '<switch>' + state.strippedPgfForeignObject);
+      str = str.replace('</switch>', '</switch>' + state.strippedPgfBlock);
+      restored = true;
+    } else if(str.includes('</svg>')){
+      str = str.replace(/<\/svg>\s*$/, state.strippedPgfBlock + '\n</svg>');
+      restored = true;
+    }
+    if(restored){
+      log('info', 'Restored the Illustrator round-trip snapshot for this export, per your toggle — Illustrator will show the pre-edit artwork if this file is reopened there, but its Layers panel should match the original structure.');
+    } else {
+      log('err', 'Could not find a safe place to restore the Illustrator snapshot in this file — exporting without it, so edits will be visible but the Layers panel may still be flattened.');
+    }
+  }
+
+  if(!str.match(/^<\?xml/)) str = '<?xml version="1.0" encoding="UTF-8"?>\n' + str;
+  // XMLSerializer only serializes the <svg> element itself, never the DOCTYPE —
+  // so it has to be re-added by hand. This matters beyond just cosmetics: if the
+  // restored Illustrator snapshot (or its wrapper) uses custom entities like
+  // &ns_ai;, the exported file is invalid XML without the DOCTYPE that defines
+  // them, which is exactly the kind of thing a strict parser like Illustrator
+  // will refuse to open.
+  if(state.originalDoctype && !str.includes('<!DOCTYPE')){
+    str = str.replace(/(<\?xml[^>]*\?>\s*)/, '$1' + state.originalDoctype + '\n');
+  }
+  const blob = new Blob([str], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const base = (state.fileName||'plan.svg').replace(/\.svg$/i,'');
+  a.href = url;
+  a.download = base + '_edited.svg';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  log('ok', `Exported <b>${base}_edited.svg</b>.`);
+  toast('SVG exported');
+});
+
+log('info', 'Ready. Open an SVG floor plan to begin.');
+
+// Exposed for debugging/testing only — not required for normal use.
+window.UF_DEBUG = { state, rescanLayers, hideLargeEmbeddedImages, runTaskBatch, applyRefLayerVisibility, applyLargeImageVisibility, applyLayerFocusVisibility, getUnitsInLayer, findBundle, resolveFriendlyLayerNames, parseUnitRefCsv, setUnitText, applyCenteringOffset, getAdjustedBBox, relabelShape, findUnitIdForNumber, uniquifyDuplicateSublayerNames, combineUnits, splitUnit, moveTextToCenterOfShape, shapeToRootSpacePoints, rootPointsToClippingPolygon, clippingResultToLocalPointsString, createPolygonLike };
+</script>
+</body>
+</html>
